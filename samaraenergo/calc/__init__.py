@@ -75,11 +75,14 @@ class CalculatorConfig:
 
     @staticmethod
     def from_string(config: str) -> CityConfig | CountryConfig:
+        assert len(config) in [2, 4]
         position, tariff = Position(config[0]), Tariff(config[1])
 
         if position is Position.COUNTRY:
+            assert len(config) == 2
             return CountryConfig(tariff)
 
+        assert len(config) == 4
         return CityConfig(tariff, HeatingType(config[2]), StoveType(config[3]))
 
 
