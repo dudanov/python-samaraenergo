@@ -136,14 +136,13 @@ class OnlineCalculator:
     def config(self) -> CalculatorConfig:
         return self._config
 
-    def _gen_args(self) -> Iterator[tuple[int, ...]]:
+    def _gen_args(self) -> Iterator[list[int]]:
         n = self._config.tariff.n_args
 
         for idx in range(n):
             lst = [0] * n
             lst[idx] = 1
-
-            yield tuple(lst)
+            yield lst
 
     async def __aenter__(self):
         return self
