@@ -10,8 +10,6 @@ from typing import Literal, override
 
 import aiohttp
 
-type CalculatorConfig = CityConfig | CountryConfig
-
 _LOGGER = logging.getLogger(__name__)
 
 URL = "https://www.samaraenergo.ru/fiz-licam/online-kalkulyator/"
@@ -64,7 +62,7 @@ class Tariff(StrEnum, boundary=STRICT):
 
 
 @dc.dataclass(frozen=True)
-class BaseConfig:
+class CalculatorConfig:
     pass
 
     @property
@@ -75,7 +73,7 @@ class BaseConfig:
     def name(self) -> str: ...
 
     @staticmethod
-    def from_config(cfg: str) -> CalculatorConfig:
+    def from_string(cfg: str) -> CityConfig | CountryConfig:
         position, tariff = Position(cfg[0]), Tariff(cfg[1])
 
         if position is Position.COUNTRY:
@@ -85,7 +83,7 @@ class BaseConfig:
 
 
 @dc.dataclass(frozen=True)
-class CityConfig(BaseConfig):
+class CityConfig(CalculatorConfig):
     position: Literal[Position.CITY]
     tariff: Tariff
     heating: HeatingType
@@ -101,7 +99,7 @@ class CityConfig(BaseConfig):
 
 
 @dc.dataclass(frozen=True)
-class CountryConfig(BaseConfig):
+class CountryConfig(CalculatorConfig):
     position: Literal[Position.COUNTRY]
     tariff: Tariff
 
@@ -114,7 +112,7 @@ class CountryConfig(BaseConfig):
 class OnlineCalculator:
     def __init__(
         self,
-        config: CalculatorConfig,
+        config: CityConfig | CountryConfig,
         *,
         session: aiohttp.ClientSession | None = None,
     ) -> None:
@@ -123,14 +121,14 @@ class OnlineCalculator:
         self._close_connector = not session
 
     @classmethod
-    def from_config_str(
+    def from_string(
         cls,
         config_str: str,
         *,
         session: aiohttp.ClientSession | None = None,
     ):
         return cls(
-            BaseConfig.from_config(config_str),
+            CalculatorConfig.from_string(config_str),
             session=session,
         )
 

@@ -21,7 +21,7 @@ async def main():
     async with OnlineCalculator(config) as calc:
         print(await calc.get_cost(date=dt.date(2024, 1, 1)))
 
-    async with OnlineCalculator.from_config_str(config.asstring) as calc:
+    async with OnlineCalculator.from_string(config.asstring) as calc:
         print(await calc.get_cost(date=dt.date(2024, 7, 1)))
 
 
