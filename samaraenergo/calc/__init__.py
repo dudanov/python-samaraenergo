@@ -6,7 +6,7 @@ import datetime as dt
 import logging
 from collections.abc import Iterator
 from enum import STRICT, StrEnum
-from typing import Literal, override
+from typing import Awaitable, Literal, override
 
 import aiohttp
 
@@ -222,11 +222,11 @@ class OnlineCalculator:
 
             yield lst
 
-    async def get_zones_cost(
+    def get_zones_cost(
         self,
         *,
         date: dt.date | None = None,
-    ) -> list[float]:
+    ) -> Awaitable[list[float]]:
         """
         Запрос стоимости зон тарифа.
 
@@ -236,6 +236,4 @@ class OnlineCalculator:
 
         date = date or dt.date.today()
 
-        return await asyncio.gather(
-            *(self.request(*x, date=date) for x in self._cost_args())
-        )
+        return asyncio.gather(*(self.request(*x, date=date) for x in self._cost_args()))
