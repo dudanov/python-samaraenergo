@@ -1,7 +1,6 @@
 import asyncio
 import datetime as dt
 import logging
-import sys
 
 from . import (
     CalculatorConfig,
@@ -32,8 +31,5 @@ async def main():
     async with OnlineCalculator.from_config_str(config.config_str) as calc:
         print(await calc.get_cost(date=dt.date(2024, 7, 1)))
 
-
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 asyncio.run(main())

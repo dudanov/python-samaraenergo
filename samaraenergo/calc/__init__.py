@@ -69,12 +69,14 @@ class CalculatorConfig:
     stove: StoveType | None = None
 
     @property
-    def short_ru(self):
+    def short(self):
+        """Короткая запись конфигурации"""
+
         if self.position is Position.COUNTRY:
             return f"С{self.tariff.n_args}"
 
-        x1 = "Ц" if HeatingType.CENTRAL else "Э"
-        x2 = "Г" if StoveType.GAS else "Э"
+        x1 = "Ц" if self.heating is HeatingType.CENTRAL else "Э"
+        x2 = "Г" if self.stove is StoveType.GAS else "Э"
 
         return f"Г{self.tariff.n_args}/{x1}О/{x2}П"
 
