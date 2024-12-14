@@ -71,7 +71,7 @@ class CalculatorConfig:
         return "".join(dc.astuple(self))
 
     @property
-    def name(self) -> str: ...
+    def code(self) -> str: ...
 
     @staticmethod
     def from_string(config: str) -> CityConfig | CountryConfig:
@@ -92,11 +92,11 @@ class CityConfig(CalculatorConfig):
 
     @property
     @override
-    def name(self):
+    def code(self):
         x1 = "Ц" if self.heating is HeatingType.CENTRAL else "Э"
         x2 = "Г" if self.stove is StoveType.GAS else "Э"
 
-        return f"Г{self.tariff.zones}/{x1}О/{x2}П"
+        return f"Г{self.tariff.zones}-{x1}О-{x2}П"
 
 
 @dc.dataclass(frozen=True)
@@ -106,7 +106,7 @@ class CountryConfig(CalculatorConfig):
 
     @property
     @override
-    def name(self):
+    def code(self):
         return f"С{self.tariff.zones}"
 
 
