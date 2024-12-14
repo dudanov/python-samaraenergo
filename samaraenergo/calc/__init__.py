@@ -77,14 +77,14 @@ class CalculatorConfig:
         position, tariff = Position(cfg[0]), Tariff(cfg[1])
 
         if position is Position.COUNTRY:
-            return CountryConfig(position, tariff)
+            return CountryConfig(tariff)
 
-        return CityConfig(position, tariff, HeatingType(cfg[2]), StoveType(cfg[3]))
+        return CityConfig(tariff, HeatingType(cfg[2]), StoveType(cfg[3]))
 
 
 @dc.dataclass(frozen=True)
 class CityConfig(CalculatorConfig):
-    position: Literal[Position.CITY]
+    position: Literal[Position.CITY] = dc.field(default=Position.CITY, init=False)
     tariff: Tariff
     heating: HeatingType
     stove: StoveType
@@ -100,7 +100,7 @@ class CityConfig(CalculatorConfig):
 
 @dc.dataclass(frozen=True)
 class CountryConfig(CalculatorConfig):
-    position: Literal[Position.COUNTRY]
+    position: Literal[Position.COUNTRY] = dc.field(default=Position.COUNTRY, init=False)
     tariff: Tariff
 
     @property

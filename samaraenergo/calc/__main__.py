@@ -2,14 +2,13 @@ import asyncio
 import datetime as dt
 import logging
 
-from . import CityConfig, HeatingType, OnlineCalculator, Position, StoveType, Tariff
+from . import CityConfig, HeatingType, OnlineCalculator, StoveType, Tariff
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 async def main():
     config = CityConfig(
-        position=Position.CITY,
         tariff=Tariff.TWO,
         heating=HeatingType.CENTRAL,
         stove=StoveType.GAS,
