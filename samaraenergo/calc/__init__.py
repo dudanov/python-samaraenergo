@@ -57,7 +57,7 @@ class Tariff(StrEnum, boundary=STRICT):
     """Трехтарифный"""
 
     @property
-    def n_args(self):
+    def num(self):
         return int(self.value) - 6
 
 
@@ -95,7 +95,7 @@ class CityConfig(CalculatorConfig):
         x1 = "Ц" if self.heating is HeatingType.CENTRAL else "Э"
         x2 = "Г" if self.stove is StoveType.GAS else "Э"
 
-        return f"Г{self.tariff.n_args}/{x1}О/{x2}П"
+        return f"Г{self.tariff.num}/{x1}О/{x2}П"
 
 
 @dc.dataclass(frozen=True)
@@ -106,7 +106,7 @@ class CountryConfig(CalculatorConfig):
     @property
     @override
     def name(self):
-        return f"С{self.tariff.n_args}"
+        return f"С{self.tariff.num}"
 
 
 class OnlineCalculator:
@@ -137,7 +137,7 @@ class OnlineCalculator:
         return self._config
 
     def _gen_args(self) -> Iterator[list[int]]:
-        n = self._config.tariff.n_args
+        n = self._config.tariff.num
 
         for idx in range(n):
             lst = [0] * n
@@ -175,7 +175,7 @@ class OnlineCalculator:
         if any(x < 0 for x in values):
             raise ValueError("Значения не должны быть отрицательными.")
 
-        if n != self._config.tariff.n_args:
+        if n != self._config.tariff.num:
             raise ValueError("Количество переданных значений не соответствует тарифу.")
 
         if not any(values):
