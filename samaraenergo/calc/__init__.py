@@ -1,16 +1,18 @@
+from __future__ import annotations
+
 import asyncio
 import dataclasses as dc
 import datetime as dt
 import logging
 from collections.abc import Iterator
 from enum import STRICT, StrEnum
-from types import UnionType
-from typing import Any, cast, get_args
+from typing import Literal, override
 
 import aiohttp
 
-_LOGGER = logging.getLogger(__name__)
+type CalculatorConfig = CityConfig | CountryConfig
 
+_LOGGER = logging.getLogger(__name__)
 
 URL = "https://www.samaraenergo.ru/fiz-licam/online-kalkulyator/"
 
@@ -61,40 +63,52 @@ class Tariff(StrEnum, boundary=STRICT):
         return int(self.value) - 6
 
 
-@dc.dataclass(frozen=True, kw_only=True)
-class CalculatorConfig:
-    position: Position
-    tariff: Tariff
-    heating: HeatingType | None = None
-    stove: StoveType | None = None
+@dc.dataclass(frozen=True)
+class BaseConfig:
+    pass
 
     @property
-    def short(self):
-        """Короткая запись конфигурации"""
+    def asstring(self) -> str:
+        return "".join(dc.astuple(self))
 
-        if self.position is Position.COUNTRY:
-            return f"С{self.tariff.n_args}"
+    @property
+    def name(self) -> str: ...
 
+    @staticmethod
+    def from_config(cfg: str) -> CalculatorConfig:
+        position, tariff = Position(cfg[0]), Tariff(cfg[1])
+
+        if position is Position.COUNTRY:
+            return CountryConfig(position, tariff)
+
+        return CityConfig(position, tariff, HeatingType(cfg[2]), StoveType(cfg[3]))
+
+
+@dc.dataclass(frozen=True)
+class CityConfig(BaseConfig):
+    position: Literal[Position.CITY]
+    tariff: Tariff
+    heating: HeatingType
+    stove: StoveType
+
+    @property
+    @override
+    def name(self):
         x1 = "Ц" if self.heating is HeatingType.CENTRAL else "Э"
         x2 = "Г" if self.stove is StoveType.GAS else "Э"
 
         return f"Г{self.tariff.n_args}/{x1}О/{x2}П"
 
-    @classmethod
-    def from_config_str(cls, config_str: str):
-        kwargs: dict[str, Any] = {}
 
-        for k, v in zip(dc.fields(cls), config_str):
-            if isinstance(tp := k.type, UnionType):
-                tp = get_args(tp)[0]
-
-            kwargs[k.name] = cast(type, tp)(v)
-
-        return cls(**kwargs)
+@dc.dataclass(frozen=True)
+class CountryConfig(BaseConfig):
+    position: Literal[Position.COUNTRY]
+    tariff: Tariff
 
     @property
-    def config_str(self) -> str:
-        return "".join(filter(None, dc.astuple(self)))
+    @override
+    def name(self):
+        return f"С{self.tariff.n_args}"
 
 
 class OnlineCalculator:
@@ -116,7 +130,7 @@ class OnlineCalculator:
         session: aiohttp.ClientSession | None = None,
     ):
         return cls(
-            CalculatorConfig.from_config_str(config_str),
+            BaseConfig.from_config(config_str),
             session=session,
         )
 
