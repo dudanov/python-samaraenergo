@@ -57,7 +57,8 @@ class Tariff(StrEnum, boundary=STRICT):
     """Трехтарифный"""
 
     @property
-    def num(self):
+    def zones(self):
+        """Количество зон тарифа"""
         return int(self.value) - 6
 
 
@@ -73,13 +74,13 @@ class CalculatorConfig:
     def name(self) -> str: ...
 
     @staticmethod
-    def from_string(cfg: str) -> CityConfig | CountryConfig:
-        position, tariff = Position(cfg[0]), Tariff(cfg[1])
+    def from_string(config: str) -> CityConfig | CountryConfig:
+        position, tariff = Position(config[0]), Tariff(config[1])
 
         if position is Position.COUNTRY:
             return CountryConfig(tariff)
 
-        return CityConfig(tariff, HeatingType(cfg[2]), StoveType(cfg[3]))
+        return CityConfig(tariff, HeatingType(config[2]), StoveType(config[3]))
 
 
 @dc.dataclass(frozen=True)
@@ -95,7 +96,7 @@ class CityConfig(CalculatorConfig):
         x1 = "Ц" if self.heating is HeatingType.CENTRAL else "Э"
         x2 = "Г" if self.stove is StoveType.GAS else "Э"
 
-        return f"Г{self.tariff.num}/{x1}О/{x2}П"
+        return f"Г{self.tariff.zones}/{x1}О/{x2}П"
 
 
 @dc.dataclass(frozen=True)
@@ -106,7 +107,7 @@ class CountryConfig(CalculatorConfig):
     @property
     @override
     def name(self):
-        return f"С{self.tariff.num}"
+        return f"С{self.tariff.zones}"
 
 
 class OnlineCalculator:
@@ -123,26 +124,24 @@ class OnlineCalculator:
     @classmethod
     def from_string(
         cls,
-        config_str: str,
+        config: str,
         *,
         session: aiohttp.ClientSession | None = None,
     ):
         return cls(
-            CalculatorConfig.from_string(config_str),
+            CalculatorConfig.from_string(config),
             session=session,
         )
 
     @property
-    def config(self) -> CalculatorConfig:
+    def config(self) -> CityConfig | CountryConfig:
+        """Текущая конфигурация"""
         return self._config
 
-    def _gen_args(self) -> Iterator[list[int]]:
-        n = self._config.tariff.num
-
-        for idx in range(n):
-            lst = [0] * n
-            lst[idx] = 1
-            yield lst
+    @property
+    def zones(self) -> int:
+        """Количество зон текущего тарифа"""
+        return self._config.tariff.zones
 
     async def __aenter__(self):
         return self
@@ -162,11 +161,11 @@ class OnlineCalculator:
         """
         Функция запроса к онлайн-калькулятору.
 
-        Возвращает стоимость энергии.
+        Возвращает стоимость потребленной энергии.
 
         Параметры:
-        - `*values`: значения потребления в соответствие с выбранным тарифом.
-        - `date`: дата расчетного периода.
+        - `*values`: потребление по зонам в соответствии с текущим тарифом.
+        - `date`: дата расчетного периода. Если `None` - текущая дата.
         """
 
         if not (1 <= (n := len(values)) <= 3):
@@ -175,8 +174,10 @@ class OnlineCalculator:
         if any(x < 0 for x in values):
             raise ValueError("Значения не должны быть отрицательными.")
 
-        if n != self._config.tariff.num:
-            raise ValueError("Количество переданных значений не соответствует тарифу.")
+        if n != self._config.tariff.zones:
+            raise ValueError(
+                "Количество значений потребления зон не соответствует текущему тарифу."
+            )
 
         if not any(values):
             return 0
@@ -202,7 +203,7 @@ class OnlineCalculator:
             data["START_POLUPIK"] = 0
             data["END_POLUPIK"] = values[1]
 
-        _LOGGER.debug("POST request data: %s", data)
+        _LOGGER.debug("Данные POST запроса: %s", data)
 
         async with self._session.post(URL, data=data) as x:
             json = await x.json(content_type="text/html")
@@ -210,15 +211,31 @@ class OnlineCalculator:
         if json["Status"]:
             return float(json["Value"].replace(",", "."))
 
-        raise ApiError("Request error")
+        raise ApiError("Ошибка запроса")
+
+    def _cost_args(self) -> Iterator[list[int]]:
+        zones = self.zones
+
+        for idx in range(zones):
+            lst = [0] * zones
+            lst[idx] = 1
+
+            yield lst
 
     async def get_cost(
         self,
         *,
         date: dt.date | None = None,
     ) -> list[float]:
-        """Запрос стоимости тарифа"""
+        """
+        Запрос стоимости зон тарифа.
+
+        Параметры:
+        - `date`: дата расчетного периода. Если `None` - текущая дата.
+        """
+
+        date = date or dt.date.today()
 
         return await asyncio.gather(
-            *(self.request(*x, date=date or dt.date.today()) for x in self._gen_args())
+            *(self.request(*x, date=date) for x in self._cost_args())
         )
