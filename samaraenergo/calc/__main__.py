@@ -18,10 +18,10 @@ async def main():
     print(f"Config as string: {config.asstring}")
 
     async with OnlineCalculator(config) as calc:
-        print(await calc.get_cost(date=dt.date(2024, 1, 1)))
+        print(await calc.get_zones_cost(date=dt.date(2024, 1, 1)))
 
     async with OnlineCalculator.from_string(config.asstring) as calc:
-        print(await calc.get_cost(date=dt.date(2024, 7, 1)))
+        print(await calc.get_zones_cost(date=dt.date(2024, 7, 1)))
 
 
 asyncio.run(main())

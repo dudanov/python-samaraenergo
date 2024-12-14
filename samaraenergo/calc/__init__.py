@@ -222,7 +222,7 @@ class OnlineCalculator:
 
             yield lst
 
-    async def get_cost(
+    async def get_zones_cost(
         self,
         *,
         date: dt.date | None = None,
