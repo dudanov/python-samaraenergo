@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import dataclasses as dc
 import datetime as dt
+import itertools as it
 import logging
 from collections.abc import Iterator
 from enum import STRICT, StrEnum
@@ -64,8 +65,6 @@ class Tariff(StrEnum, boundary=STRICT):
 
 @dc.dataclass(frozen=True)
 class CalculatorConfig:
-    pass
-
     @property
     def asstring(self) -> str:
         return "".join(dc.astuple(self))
@@ -185,9 +184,14 @@ class OnlineCalculator:
         if not any(values):
             return 0
 
+        date = dt.date(date.year, date.month, date.day) if date else dt.date.today()
+
+        if date < dt.date(2022, 1, 1):
+            raise ValueError("Не поддерживаются даты ранее 1 января 2022 года.")
+
         data = {
             "action": "calculate",
-            "UF_DATE": (date or dt.date.today()).strftime("%d.%m.%Y"),
+            "UF_DATE": date.strftime("%d.%m.%Y"),
             "UF_POSITION": self._config.position,
             "UF_TARIF": self._config.tariff,
             "START_PIK": 0,
@@ -240,3 +244,51 @@ class OnlineCalculator:
         date = date or dt.date.today()
 
         return asyncio.gather(*(self.request(*x, date=date) for x in self._cost_args()))
+
+    def _get_costs(self, *dates: dt.datetime) -> Awaitable[list[float]]:
+        return asyncio.gather(
+            *it.chain.from_iterable(
+                (self.request(*args, date=date) for date in dates)
+                for args in self._cost_args()
+            )
+        )
+
+    async def get_last_months_costs(
+        self,
+        months: int,
+        *,
+        tzinfo: dt.timezone | None = None,
+    ) -> list[dict[dt.datetime, float]]:
+        """
+        Запрашивает изменения стоимостей зон тарифа за последние `months` месяцев.
+
+        Параметры:
+        - `months`: глубина просмотра истории изменения стоимости в количестве месяцев.
+        - `tzinfo`: часовой пояс. Если `None` - часовой пояс UTC.
+        """
+
+        dates: list[dt.datetime] = []
+        now = dt.datetime.now(tzinfo or dt.UTC)
+        now = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        one = dt.timedelta(days=1)
+
+        for _ in range(months):
+            dates.append(now := now.replace(day=1))
+            now -= one
+
+        dates = dates[::-1]
+        values = await self._get_costs(*dates)
+
+        result: list[dict[dt.datetime, float]] = []
+
+        for i in range(0, len(values), months):
+            last_value = 0
+            states: dict[dt.datetime, float] = {}
+
+            for date, value in zip(dates, values[i : i + months]):
+                if value != last_value:
+                    states[date] = last_value = value
+
+            result.append(states)
+
+        return result
