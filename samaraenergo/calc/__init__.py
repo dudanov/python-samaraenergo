@@ -4,9 +4,8 @@ import asyncio
 import dataclasses as dc
 import datetime as dt
 import logging
-from collections.abc import Iterator
 from enum import STRICT, StrEnum
-from typing import AsyncIterator, Awaitable, Literal, override
+from typing import AsyncIterator, Awaitable, Iterator, Literal, Sequence, override
 
 import aiohttp
 
@@ -244,7 +243,9 @@ class OnlineCalculator:
 
         return asyncio.gather(*(self.request(*x, date=date) for x in self._cost_args()))
 
-    async def _iter_costs(self, *dates: dt.datetime) -> AsyncIterator[ZoneCostList]:
+    async def _iter_costs(
+        self, dates: Sequence[dt.datetime]
+    ) -> AsyncIterator[ZoneCostList]:
         """Асинхронный генератор изменений стоимостей зон"""
 
         for args in self._cost_args():
@@ -286,4 +287,4 @@ class OnlineCalculator:
             dates.append(now := now.replace(day=1))
             now -= one
 
-        return [x async for x in self._iter_costs(*dates[::-1])]
+        return [x async for x in self._iter_costs(dates[::-1])]
