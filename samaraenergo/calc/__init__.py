@@ -6,11 +6,14 @@ import datetime as dt
 import logging
 from collections.abc import Iterator
 from enum import STRICT, StrEnum
-from typing import AsyncIterator, Awaitable, Literal, Mapping, override
+from typing import AsyncIterator, Awaitable, Literal, override
 
 import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
+
+type ZoneCost = tuple[dt.datetime, float]
+type ZoneCostList = list[ZoneCost]
 
 URL = "https://www.samaraenergo.ru/fiz-licam/online-kalkulyator/"
 
@@ -241,9 +244,7 @@ class OnlineCalculator:
 
         return asyncio.gather(*(self.request(*x, date=date) for x in self._cost_args()))
 
-    async def _iter_costs(
-        self, *dates: dt.datetime
-    ) -> AsyncIterator[Mapping[dt.datetime, float]]:
+    async def _iter_costs(self, *dates: dt.datetime) -> AsyncIterator[ZoneCostList]:
         """Асинхронный генератор изменений стоимостей зон"""
 
         for args in self._cost_args():
@@ -253,12 +254,12 @@ class OnlineCalculator:
             assert all(values)
 
             # Фильтр изменений стоимости
-            result: Mapping[dt.datetime, float] = {}
+            result: ZoneCostList = []
             last_value = 0
 
             for date, value in zip(dates, values):
                 if value != last_value:
-                    result[date] = last_value = value
+                    result.append((date, (last_value := value)))
 
             yield result
 
@@ -267,7 +268,7 @@ class OnlineCalculator:
         months: int,
         *,
         tzinfo: dt.timezone | None = None,
-    ) -> list[Mapping[dt.datetime, float]]:
+    ) -> list[ZoneCostList]:
         """
         Запрашивает изменения стоимостей зон тарифа за последние `months` месяцев.
 
