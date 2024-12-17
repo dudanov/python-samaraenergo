@@ -3,11 +3,10 @@ from __future__ import annotations
 import asyncio
 import dataclasses as dc
 import datetime as dt
-import itertools as it
 import logging
 from collections.abc import Iterator
 from enum import STRICT, StrEnum
-from typing import Awaitable, Literal, override
+from typing import AsyncIterator, Awaitable, Literal, Mapping, override
 
 import aiohttp
 
@@ -170,16 +169,13 @@ class OnlineCalculator:
         - `date`: дата расчетного периода. Если `None` - текущая дата.
         """
 
-        if not (1 <= (n := len(values)) <= 3):
-            raise ValueError("Должно быть 1, 2 или 3 значения.")
-
-        if any(x < 0 for x in values):
-            raise ValueError("Значения не должны быть отрицательными.")
-
-        if n != self._config.tariff.zones:
+        if len(values) != self._config.tariff.zones:
             raise ValueError(
                 "Количество значений потребления зон не соответствует текущему тарифу."
             )
+
+        if any(x < 0 for x in values):
+            raise ValueError("Значения не могут быть отрицательными.")
 
         if not any(values):
             return 0
@@ -245,20 +241,33 @@ class OnlineCalculator:
 
         return asyncio.gather(*(self.request(*x, date=date) for x in self._cost_args()))
 
-    def _get_costs(self, *dates: dt.datetime) -> Awaitable[list[float]]:
-        return asyncio.gather(
-            *it.chain.from_iterable(
-                (self.request(*args, date=date) for date in dates)
-                for args in self._cost_args()
-            )
-        )
+    async def _iter_costs(
+        self, *dates: dt.datetime
+    ) -> AsyncIterator[Mapping[dt.datetime, float]]:
+        """Асинхронный генератор изменений стоимостей зон"""
+
+        for args in self._cost_args():
+            jobs = (self.request(*args, date=date) for date in dates)
+            values = await asyncio.gather(*jobs)
+
+            assert all(values)
+
+            # Фильтр изменений стоимости
+            result: Mapping[dt.datetime, float] = {}
+            last_value = 0
+
+            for date, value in zip(dates, values):
+                if value != last_value:
+                    result[date] = last_value = value
+
+            yield result
 
     async def get_last_months_costs(
         self,
         months: int,
         *,
         tzinfo: dt.timezone | None = None,
-    ) -> list[dict[dt.datetime, float]]:
+    ) -> list[Mapping[dt.datetime, float]]:
         """
         Запрашивает изменения стоимостей зон тарифа за последние `months` месяцев.
 
@@ -276,19 +285,4 @@ class OnlineCalculator:
             dates.append(now := now.replace(day=1))
             now -= one
 
-        dates = dates[::-1]
-        values = await self._get_costs(*dates)
-
-        result: list[dict[dt.datetime, float]] = []
-
-        for i in range(0, len(values), months):
-            last_value = 0
-            states: dict[dt.datetime, float] = {}
-
-            for date, value in zip(dates, values[i : i + months]):
-                if value != last_value:
-                    states[date] = last_value = value
-
-            result.append(states)
-
-        return result
+        return [x async for x in self._iter_costs(*dates[::-1])]
