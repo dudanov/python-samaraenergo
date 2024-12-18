@@ -268,7 +268,7 @@ class OnlineCalculator:
         self,
         months: int,
         *,
-        tzinfo: dt.timezone | None = None,
+        tzinfo: dt.tzinfo | None = None,
     ) -> list[ZoneCostList]:
         """
         Запрашивает изменения стоимостей зон тарифа за последние `months` месяцев.

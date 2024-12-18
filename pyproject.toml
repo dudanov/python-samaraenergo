@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "samaraenergo"
-version = "0.2.9"
+version = "0.2.10"
 description = "Клиент электросбытовой компании СамараЭнерго"
 authors = ["Sergey V. DUDANOV <sergey.dudanov@gmail.com>"]
 readme = "README.md"
