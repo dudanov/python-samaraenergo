@@ -279,17 +279,19 @@ class OnlineCalculator:
         """
 
         dates: list[dt.datetime] = []
-        now = dt.datetime.now(tzinfo or dt.UTC)
+        now = dt.datetime.now(tzinfo)
         now = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
         if isinstance(months_or_last_date, int):
             assert months_or_last_date > 0
 
             year, month = divmod(months_or_last_date - 1, 12)
-            start = dt.datetime(now.year - year, now.month - month, 1)
+            start = now.replace(now.year - year, now.month - month, 1)
 
         else:
-            start = months_or_last_date.replace(day=1)
+            start = months_or_last_date.replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
 
         while start <= now:
             dates.append(start)
