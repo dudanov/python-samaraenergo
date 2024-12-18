@@ -266,7 +266,7 @@ class OnlineCalculator:
 
     async def get_last_months_costs(
         self,
-        months: int,
+        months_or_last_date: int | dt.datetime,
         *,
         tzinfo: dt.tzinfo | None = None,
     ) -> list[ZoneCostList]:
@@ -281,10 +281,21 @@ class OnlineCalculator:
         dates: list[dt.datetime] = []
         now = dt.datetime.now(tzinfo or dt.UTC)
         now = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        one = dt.timedelta(days=1)
 
-        for _ in range(months):
-            dates.append(now := now.replace(day=1))
-            now -= one
+        if isinstance(months_or_last_date, int):
+            period = dt.timedelta(days=1)
 
-        return [x async for x in self._iter_costs(dates[::-1])]
+            for _ in range(months_or_last_date):
+                dates.append(now := now.replace(day=1))
+                now -= period
+
+            dates = dates[::-1]
+
+        else:
+            start, period = months_or_last_date.replace(day=1), dt.timedelta(days=31)
+
+            while start <= now:
+                dates.append(start)
+                start = (start + period).replace(day=1)
+
+        return [x async for x in self._iter_costs(dates)]
