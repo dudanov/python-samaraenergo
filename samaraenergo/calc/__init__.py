@@ -266,7 +266,7 @@ class OnlineCalculator:
 
     async def get_last_months_costs(
         self,
-        months_or_last_date: int | dt.datetime,
+        months_or_start: int | dt.datetime,
         *,
         tzinfo: dt.tzinfo | None = None,
     ) -> list[ZoneCostList]:
@@ -274,7 +274,7 @@ class OnlineCalculator:
         Запрашивает изменения стоимостей зон тарифа за последние `months` месяцев.
 
         Параметры:
-        - `months`: глубина просмотра истории изменения стоимости в количестве месяцев.
+        - `months_or_start`: глубина истории изменения стоимости в количестве месяцев или стартовая дата.
         - `tzinfo`: часовой пояс. Если `None` - часовой пояс UTC.
         """
 
@@ -282,13 +282,13 @@ class OnlineCalculator:
         now = dt.datetime.now(tzinfo)
         now = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        if isinstance(months_or_last_date, int):
-            assert (n := months_or_last_date) > 0
-            y, m = divmod(n - 1, 12)
+        if isinstance(months_or_start, int):
+            assert months_or_start > 0
+            y, m = divmod(months_or_start - 1, 12)
             start = now.replace(now.year - y, now.month - m, 1)
 
         else:
-            date = months_or_last_date
+            date = months_or_start
             start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         while start <= now:
