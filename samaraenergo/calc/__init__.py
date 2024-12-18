@@ -283,15 +283,13 @@ class OnlineCalculator:
         now = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
         if isinstance(months_or_last_date, int):
-            assert months_or_last_date > 0
-
-            year, month = divmod(months_or_last_date - 1, 12)
-            start = now.replace(now.year - year, now.month - month, 1)
+            assert (n := months_or_last_date) > 0
+            y, m = divmod(n - 1, 12)
+            start = now.replace(now.year - y, now.month - m, 1)
 
         else:
-            start = months_or_last_date.replace(
-                day=1, hour=0, minute=0, second=0, microsecond=0
-            )
+            date = months_or_last_date
+            start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         while start <= now:
             dates.append(start)
