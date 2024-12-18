@@ -300,11 +300,12 @@ class OnlineCalculator:
 
         while start <= now:
             dates.append(start)
-            year, month = start.year, start.month + 1
 
-            if month > 12:
-                year, month = year + 1, 1
+            y, m = start.year, start.month + 1
 
-            start = start.replace(year, month)
+            if m > 12:
+                y, m = y + 1, 1
+
+            start = start.replace(y, m)
 
         return [x async for x in self._iter_costs(dates)]
