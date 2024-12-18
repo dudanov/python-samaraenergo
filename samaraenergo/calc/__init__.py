@@ -283,19 +283,21 @@ class OnlineCalculator:
         now = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
         if isinstance(months_or_last_date, int):
-            period = dt.timedelta(days=1)
+            assert months_or_last_date > 0
 
-            for _ in range(months_or_last_date):
-                dates.append(now := now.replace(day=1))
-                now -= period
-
-            dates = dates[::-1]
+            year, month = divmod(months_or_last_date - 1, 12)
+            start = dt.datetime(now.year - year, now.month - month, 1)
 
         else:
-            start, period = months_or_last_date.replace(day=1), dt.timedelta(days=31)
+            start = months_or_last_date.replace(day=1)
 
-            while start <= now:
-                dates.append(start)
-                start = (start + period).replace(day=1)
+        while start <= now:
+            dates.append(start)
+            year, month = start.year, start.month + 1
+
+            if month > 12:
+                year, month = year + 1, 1
+
+            start = start.replace(year, month)
 
         return [x async for x in self._iter_costs(dates)]
