@@ -294,7 +294,8 @@ class OnlineCalculator:
         else:
             start, period = months_or_last_date.replace(day=1), dt.timedelta(days=31)
 
-            while (start := (start + period).replace(day=1)) <= now:
+            while start <= now:
                 dates.append(start)
+                start = (start + period).replace(day=1)
 
         return [x async for x in self._iter_costs(dates)]
