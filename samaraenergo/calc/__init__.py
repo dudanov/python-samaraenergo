@@ -244,7 +244,7 @@ class OnlineCalculator:
         return asyncio.gather(*(self.request(*x, date=date) for x in self._cost_args()))
 
     async def _iter_costs(
-        self, dates: Sequence[dt.datetime]
+        self, dates: Sequence[dt.datetime], last: dt.datetime
     ) -> AsyncIterator[ZoneCostList]:
         """Асинхронный генератор изменений стоимостей зон"""
 
@@ -254,13 +254,25 @@ class OnlineCalculator:
 
             assert all(values)
 
-            # Фильтр изменений стоимости
             result: ZoneCostList = []
+            date, one = dates[0], dt.timedelta(hours=1)
+
+            for value in values:
+                while True:
+                    result.append((date, value))
+                    date += one
+
+                    if (date.day == 1 and date.hour == 0) or date == last:
+                        break
+
+            """
+            # Фильтр изменений стоимости
             last_value = 0
 
             for date, value in zip(dates, values):
                 if value != last_value:
                     result.append((date, (last_value := value)))
+            """
 
             yield result
 
@@ -280,7 +292,8 @@ class OnlineCalculator:
 
         dates: list[dt.datetime] = []
         now = dt.datetime.now(tzinfo)
-        now = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        last = now.replace(minute=0, second=0, microsecond=0)
+        now = last.replace(hour=0)
 
         if isinstance(months_or_start, int):
             assert months_or_start > 0
@@ -308,4 +321,4 @@ class OnlineCalculator:
 
             start = start.replace(y, m)
 
-        return [x async for x in self._iter_costs(dates)]
+        return [x async for x in self._iter_costs(dates, last)]
