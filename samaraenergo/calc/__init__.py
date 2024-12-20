@@ -252,12 +252,15 @@ class OnlineCalculator:
         """Асинхронный генератор изменений стоимостей зон"""
 
         for args in self._cost_args():
+            result: ZoneCostList = []
+
+            if not dates:
+                yield result
+
             jobs = (self.request(*args, date=date) for date in dates)
             values = await asyncio.gather(*jobs)
 
             assert all(values)  # все значения должны быть ненулевыми
-
-            result: ZoneCostList = []
 
             if hourly_data:
                 date, hour = dates[0], dt.timedelta(hours=1)
