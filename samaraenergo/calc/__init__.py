@@ -300,9 +300,7 @@ class OnlineCalculator:
         now = dt.datetime.now(tzinfo)
 
         # крайняя дата и время (включаем в ответ)
-        last = now.replace(minute=0, second=0, microsecond=0)
-        # текущая дата
-        end = last.replace(hour=0)
+        end = now.replace(minute=0, second=0, microsecond=0)
 
         if isinstance(months_or_start, int):
             assert months_or_start > 0
@@ -313,21 +311,21 @@ class OnlineCalculator:
             if m <= 0:
                 y, m = y - 1, m + 12
 
-            start = end.replace(y, m, 1)
+            # начинаем с полуночи первого числа месяца
+            date = end.replace(y, m, 1, 0)
 
         else:
-            start = months_or_start.replace(
-                day=1, hour=0, minute=0, second=0, microsecond=0
-            )
+            # начинаем с начала часа переданной даты
+            date = months_or_start.replace(minute=0, second=0, microsecond=0)
 
-        while start <= end:
-            dates.append(start)
+        while date <= end:
+            dates.append(date)
 
-            y, m = start.year, start.month + 1
+            y, m = date.year, date.month + 1
 
             if m > 12:
                 y, m = y + 1, 1
 
-            start = start.replace(y, m)
+            date = date.replace(y, m, 1, 0)
 
-        return [x async for x in self._iter_costs(dates, last, hourly_data=hourly_data)]
+        return [x async for x in self._iter_costs(dates, end, hourly_data=hourly_data)]
