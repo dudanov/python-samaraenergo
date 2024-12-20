@@ -256,6 +256,7 @@ class OnlineCalculator:
 
             if not dates:
                 yield result
+                continue
 
             jobs = (self.request(*args, date=date) for date in dates)
             values = await asyncio.gather(*jobs)
