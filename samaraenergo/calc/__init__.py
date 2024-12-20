@@ -271,7 +271,7 @@ class OnlineCalculator:
                         result.append((date, value))
                         date += hour
 
-                        if (date.day == 1 and date.hour == 0) or date > end:
+                        if (date.day == 1 and date.hour == 0) or date >= end:
                             break
 
             else:
