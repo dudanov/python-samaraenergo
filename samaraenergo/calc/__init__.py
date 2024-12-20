@@ -244,7 +244,10 @@ class OnlineCalculator:
         return asyncio.gather(*(self.request(*x, date=date) for x in self._cost_args()))
 
     async def _iter_costs(
-        self, dates: Sequence[dt.datetime], last: dt.datetime
+        self,
+        dates: Sequence[dt.datetime],
+        last: dt.datetime,
+        hourly_data: bool,
     ) -> AsyncIterator[ZoneCostList]:
         """Асинхронный генератор изменений стоимостей зон"""
 
@@ -255,24 +258,25 @@ class OnlineCalculator:
             assert all(values)
 
             result: ZoneCostList = []
-            date, one = dates[0], dt.timedelta(hours=1)
 
-            for value in values:
-                while True:
-                    result.append((date, value))
-                    date += one
+            if hourly_data:
+                date, one = dates[0], dt.timedelta(hours=1)
 
-                    if (date.day == 1 and date.hour == 0) or date == last:
-                        break
+                for value in values:
+                    while True:
+                        result.append((date, value))
+                        date += one
 
-            """
-            # Фильтр изменений стоимости
-            last_value = 0
+                        if (date.day == 1 and date.hour == 0) or date == last:
+                            break
 
-            for date, value in zip(dates, values):
-                if value != last_value:
-                    result.append((date, (last_value := value)))
-            """
+            else:
+                # Фильтр изменений стоимости
+                last_value = 0
+
+                for date, value in zip(dates, values):
+                    if value != last_value:
+                        result.append((date, (last_value := value)))
 
             yield result
 
@@ -281,6 +285,7 @@ class OnlineCalculator:
         months_or_start: int | dt.datetime,
         *,
         tzinfo: dt.tzinfo | None = None,
+        hourly_data: bool = False,
     ) -> list[ZoneCostList]:
         """
         Запрашивает изменения стоимостей зон тарифа за последние месяцы либо с указанной даты.
@@ -288,6 +293,7 @@ class OnlineCalculator:
         Параметры:
         - `months_or_start`: глубина истории изменения стоимости (месяцев) или стартовая дата.
         - `tzinfo`: часовой пояс. Если `None` - часовой пояс UTC.
+        - `hourly_data`: вывести почасовые данные. По-умолчанию `False`.
         """
 
         dates: list[dt.datetime] = []
@@ -321,4 +327,4 @@ class OnlineCalculator:
 
             start = start.replace(y, m)
 
-        return [x async for x in self._iter_costs(dates, last)]
+        return [x async for x in self._iter_costs(dates, last, hourly_data=hourly_data)]
