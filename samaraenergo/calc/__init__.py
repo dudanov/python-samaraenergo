@@ -291,7 +291,7 @@ class OnlineCalculator:
         Запрашивает изменения стоимостей зон тарифа за последние месяцы либо с указанной даты.
 
         Параметры:
-        - `months_or_start`: глубина истории изменения стоимости (месяцев) или стартовая дата.
+        - `months_or_start`: глубина истории изменения стоимости (месяцев) или крайняя дата предудущей статистики.
         - `tzinfo`: часовой пояс. Если `None` - часовой пояс UTC.
         - `hourly_data`: вывести почасовые данные. По-умолчанию `False`.
         """
@@ -315,8 +315,9 @@ class OnlineCalculator:
             date = end.replace(y, m, 1, 0)
 
         else:
-            # начинаем с начала часа переданной даты
+            # начинаем с последующего часа переданной даты
             date = months_or_start.replace(minute=0, second=0, microsecond=0)
+            date += dt.timedelta(hours=1)
 
         while date <= end:
             dates.append(date)
