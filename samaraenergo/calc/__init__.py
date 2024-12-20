@@ -246,7 +246,7 @@ class OnlineCalculator:
     async def _iter_costs(
         self,
         dates: Sequence[dt.datetime],
-        last: dt.datetime,
+        end: dt.datetime,
         hourly_data: bool,
     ) -> AsyncIterator[ZoneCostList]:
         """Асинхронный генератор изменений стоимостей зон"""
@@ -255,19 +255,19 @@ class OnlineCalculator:
             jobs = (self.request(*args, date=date) for date in dates)
             values = await asyncio.gather(*jobs)
 
-            assert all(values)
+            assert all(values)  # все значения должны быть ненулевыми
 
             result: ZoneCostList = []
 
             if hourly_data:
-                date, one = dates[0], dt.timedelta(hours=1)
+                date, hour = dates[0], dt.timedelta(hours=1)
 
                 for value in values:
                     while True:
                         result.append((date, value))
-                        date += one
+                        date += hour
 
-                        if (date.day == 1 and date.hour == 0) or date == last:
+                        if (date.day == 1 and date.hour == 0) or date > end:
                             break
 
             else:
@@ -298,26 +298,29 @@ class OnlineCalculator:
 
         dates: list[dt.datetime] = []
         now = dt.datetime.now(tzinfo)
+
+        # крайняя дата и время (включаем в ответ)
         last = now.replace(minute=0, second=0, microsecond=0)
-        now = last.replace(hour=0)
+        # текущая дата
+        end = last.replace(hour=0)
 
         if isinstance(months_or_start, int):
             assert months_or_start > 0
 
             y, m = divmod(months_or_start - 1, 12)
-            y, m = now.year - y, now.month - m
+            y, m = end.year - y, end.month - m
 
             if m <= 0:
                 y, m = y - 1, m + 12
 
-            start = now.replace(y, m, 1)
+            start = end.replace(y, m, 1)
 
         else:
             start = months_or_start.replace(
                 day=1, hour=0, minute=0, second=0, microsecond=0
             )
 
-        while start <= now:
+        while start <= end:
             dates.append(start)
 
             y, m = start.year, start.month + 1
