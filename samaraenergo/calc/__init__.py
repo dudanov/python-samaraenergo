@@ -251,27 +251,25 @@ class OnlineCalculator:
     ) -> AsyncIterator[ZoneCostList]:
         """Асинхронный генератор изменений стоимостей зон"""
 
+        assert dates
+
         for args in self._cost_args():
-            result: ZoneCostList = []
-
-            if not dates:
-                yield result
-                continue
-
             jobs = (self.request(*args, date=date) for date in dates)
             values = await asyncio.gather(*jobs)
 
             assert all(values)  # все значения должны быть ненулевыми
 
+            result: ZoneCostList = []
+
             if hourly_data:
                 date, hour = dates[0], dt.timedelta(hours=1)
 
                 for value in values:
-                    while True:
+                    while date < end:
                         result.append((date, value))
                         date += hour
 
-                        if (date.day == 1 and date.hour == 0) or date >= end:
+                        if date.day == 1 and date.hour == 0:
                             break
 
             else:
@@ -290,7 +288,7 @@ class OnlineCalculator:
         *,
         tzinfo: dt.tzinfo | None = None,
         hourly_data: bool = False,
-    ) -> list[ZoneCostList]:
+    ) -> list[ZoneCostList] | None:
         """
         Запрашивает изменения стоимостей зон тарифа за последние месяцы либо с указанной даты.
 
@@ -303,7 +301,7 @@ class OnlineCalculator:
         dates: list[dt.datetime] = []
         now = dt.datetime.now(tzinfo)
 
-        # крайняя дата и время (включаем в ответ)
+        # крайняя дата и время (не включаем в ответ)
         end = now.replace(minute=0, second=0, microsecond=0)
 
         if isinstance(months_or_start, int):
@@ -316,21 +314,24 @@ class OnlineCalculator:
                 y, m = y - 1, m + 12
 
             # начинаем с полуночи первого числа месяца
-            date = end.replace(y, m, 1, 0)
+            start = end.replace(y, m, 1, 0)
 
         else:
             # начинаем с последующего часа переданной даты
-            date = months_or_start.replace(minute=0, second=0, microsecond=0)
-            date += dt.timedelta(hours=1)
+            start = months_or_start.replace(minute=0, second=0, microsecond=0)
+            start += dt.timedelta(hours=1)
 
-        while date <= end:
-            dates.append(date)
+        while start < end:
+            dates.append(start)
 
-            y, m = date.year, date.month + 1
+            y, m = start.year, start.month + 1
 
             if m > 12:
                 y, m = y + 1, 1
 
-            date = date.replace(y, m, 1, 0)
+            start = start.replace(y, m, 1, 0)
+
+        if not dates:
+            return
 
         return [x async for x in self._iter_costs(dates, end, hourly_data=hourly_data)]
