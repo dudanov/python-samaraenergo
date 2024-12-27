@@ -38,8 +38,10 @@ def _datetime_serializer(x: dt.date | None) -> str:
     if x is None:
         return _NONE_TIMESTAMP
 
-    if not isinstance(x, dt.datetime):
-        x = dt.datetime(x.year, x.month, x.day)
+    if isinstance(x, dt.datetime):
+        x = x.astimezone(dt.UTC)
+    else:
+        x = dt.datetime.combine(x, dt.time.min)
 
     return f"/Date({x.timestamp():.0f}000)/"
 
