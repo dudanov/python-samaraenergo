@@ -9,7 +9,7 @@ from typing import Annotated, Any
 from pydantic import (
     BaseModel,
     BeforeValidator,
-    Field,
+    PlainSerializer,
     RootModel,
     field_validator,
     model_validator,
@@ -21,24 +21,44 @@ _RE_DATE = re.compile(r"\/Date\((\d+)000\)\/")
 _NONE_TIMESTAMP = "253402214400"
 
 
-def _datetime_validator(_str: str) -> str | None:
-    if (m := _RE_DATE.fullmatch(_str)) and (m := m.group(1)):
+def _datetime_validator(data: Any) -> Any:
+    if isinstance(data, dt.date):
+        return data
+
+    if (m := _RE_DATE.fullmatch(data)) and (m := m.group(1)):
         return m if m != _NONE_TIMESTAMP else None
 
     raise ValueError("Должна быть строка вида '/Date(milliseconds)/'")
 
 
-Date = Annotated[dt.date | None, BeforeValidator(_datetime_validator)]
-DateTime = Annotated[dt.datetime | None, BeforeValidator(_datetime_validator)]
+def _datetime_serializer(x: dt.date | None) -> str:
+    if x is None:
+        return "/Date(253402214400000)/"
+
+    x = dt.datetime(x.year, x.month, x.day)
+    return f"/Date({x.timestamp():.0f}000)/"
+
+
+Date = Annotated[
+    dt.date | None,
+    BeforeValidator(_datetime_validator),
+    PlainSerializer(_datetime_serializer),
+]
+
+DateTime = Annotated[
+    dt.datetime | None,
+    BeforeValidator(_datetime_validator),
+    PlainSerializer(_datetime_serializer),
+]
 
 
 def _deferrable_validator(data: Any, *, multiple: bool) -> Any:
     """Валидатор моделей с отложенной загрузкой"""
 
     if not isinstance(data, dict):
-        raise ValueError("ожидается JSON объект")
+        return data
 
-    # для отложенных объектов вернем пустой список
+    # для отложенных объектов вернем пустой список или `None`
     if "__deferred" in data:
         return [] if multiple else None
 
@@ -80,24 +100,24 @@ class ResponseModel[T: BaseModel](RootModel[list[T]]):
 class Account(BaseModel):
     """Аккаунт личного кабинета"""
 
-    id: str = Field(alias="AccountID")
+    AccountID: str
     """Идентификатор"""
-    name: str = Field(alias="FullName")
+    FullName: str
     """ФИО пользователя личного кабинета"""
-    address: Deferrable[AccountAddress] = Field(alias="StandardAccountAddress")
+    StandardAccountAddress: Deferrable[AccountAddress]
     """Адрес"""
-    accounts: DeferrableList[ContractAccount] = Field(alias="ContractAccounts")
+    ContractAccounts: DeferrableList[ContractAccount]
     """Аккаунты договоров"""
-    payments: DeferrableList[PaymentDocument] = Field(alias="PaymentDocuments")
+    PaymentDocuments: DeferrableList[PaymentDocument]
     """Документы об оплате"""
 
 
 class AccountAddress(BaseModel):
     """"""
 
-    address_id: str = Field(alias="AddressID")
-    account_id: str = Field(alias="AccountID")
-    info: AddressInfo = Field(alias="AddressInfo")
+    AddressID: str
+    AccountID: str
+    AddressInfo: AddressInfo
     # AccountAddressDependentFaxes:
     # AccountAddressDependentMobilePhones
     # AccountAddressDependentPhones
@@ -108,65 +128,110 @@ class AccountAddress(BaseModel):
 class PaymentDocument(BaseModel):
     """Документ оплаты"""
 
-    id: str = Field(alias="PaymentDocumentID")
+    PaymentDocumentID: str
     """Идентификатор"""
-    date: Date = Field(alias="ExecutionDate")
+    ExecutionDate: Date
     """Дата оплаты"""
-    amount: float = Field(alias="Amount")
+    Amount: float
     """Сумма"""
-    method: str = Field(alias="PaymentMethodDescription")
+    PaymentMethodDescription: str
     """Метод оплаты"""
 
 
 class ContractAccount(BaseModel):
     """Аккаунт договора"""
 
-    id: str = Field(alias="ContractAccountID")
+    ContractAccountID: str
     """Идентификатор"""
-    cost_1: float = Field(alias="Preisbtr1")
+    Preisbtr1: float
     """Стоимость КВт*ч, день"""
-    cost_2: float = Field(alias="Preisbtr2")
+    Preisbtr2: float
     """Стоимость КВт*ч, ночь"""
-    cost_3: float = Field(alias="Preisbtr3")
+    Preisbtr3: float
     """Стоимость КВт*ч, полупик"""
-    cost_type: str = Field(alias="Ttypbez")
+    Ttypbez: str
     """Тип тарифа"""
-    pnum: str = Field(alias="Vkona")
+    Vkona: str
     """Лицевой счет"""
-    registered: int = Field(alias="Regcnt")
+    Regcnt: int
     """Кол-во прописанных"""
-    lived: int = Field(alias="Livecnt")
+    Livecnt: int
     """Кол-во проживающих"""
-    Homes: float = Field(alias="Homes")
+    Homes: float
     """Общая площадь, м2"""
-    rooms: int = Field(alias="Roomcnt")
+    Roomcnt: int
     """Кол-во комнат"""
-    contracts: DeferrableList[Contract] = Field(alias="Contracts")
+    Contracts: DeferrableList[Contract]
     """Договоры"""
-    invoices: DeferrableList[Invoice] = Field(alias="Invoices")
+    Invoices: DeferrableList[Invoice]
     """Счета на оплату"""
-    # address: AccountAddress
+
+
+class ContractConsumptionValue(BaseModel):
+    ContractID: str
+    """Идентификатор"""
+    StartDate: Date
+    """Начало расчетного периода"""
+    EndDate: Date
+    """Конец расчетного периода"""
+    BilledAmount: float
+    """Сумма"""
+    ConsumptionValue: float
+    """Энергия"""
+
+
+class MeterReadingResult(BaseModel):
+    DependentMeterReadingResults: DeferrableList[MeterReadingResult]
+    ReadingDateTime: DateTime
+    DeviceID: str
+    MeterReadingNoteID: str
+    RegisterID: str
+    ReadingResult: float
+
+
+class MeterReadingResult2(BaseModel):
+    """Показание прибора"""
+
+    MeterReadingResultID: str
+    """Идентификатор"""
+    RegisterID: str
+    """ID регистра хранения счетчика (`001` - день, `002` - ночь, `003` - полупик)"""
+    ReadingResult: float
+    """Показание"""
+    ReadingDateTime: DateTime
+    """Дата и время предоставления данных"""
+    Zwarttxt: str
+    """Зона"""
+    Text40: str
+    """Источник показаний"""
+    Prkrasch: bool
+    """Принято к расчету"""
+
+    @field_validator("Prkrasch", mode="before")
+    def is_empty(cls, value: str) -> bool:
+        return bool(value)
 
 
 class Contract(BaseModel):
     """Договор"""
 
-    id: str = Field(alias="ContractID")
+    ContractID: str
     """Идентификатор"""
-    start_date: Date = Field(alias="MoveInDate")
+    MoveInDate: Date
     """Дата заключения"""
-    end_date: Date = Field(alias="MoveOutDate")
+    MoveOutDate: Date
     """Дата расторжения"""
-    devices: DeferrableList[Device] = Field(alias="Devices")
+    Devices: DeferrableList[Device]
     """Приборы учета"""
+    ContractConsumptionValues: DeferrableList[ContractConsumptionValue]
 
 
 class Device(BaseModel):
     """Прибор учета"""
 
-    id: str = Field(alias="DeviceID")
+    DeviceID: str
     """Идентификатор"""
-    serial: str = Field(alias="SerialNumber")
+    SerialNumber: str
     """Серийный номер"""
     Vbsarttext: str
     """Тип дома"""
@@ -196,58 +261,35 @@ class Device(BaseModel):
     """Год очередной поверки"""
     Plomba: str
     """Наличие пломбы"""
-    address: str = Field(alias="LineAdr")
+    LineAdr: str
     """Место установки"""
     DevlocPltxt: str
     """Объект электроснабжения"""
-    registers: DeferrableList[RegisterToRead] = Field(alias="RegistersToRead")
+    RegistersToRead: DeferrableList[RegisterToRead]
     """Регистры показаний для чтения"""
-    values: DeferrableList[MeterReadingResult] = Field(alias="MeterReadingResults")
+    MeterReadingResults: DeferrableList[MeterReadingResult]
     """Показания"""
 
 
 class RegisterToRead(BaseModel):
     """Регистр для чтения"""
 
-    id: str = Field(alias="RegisterID")
+    RegisterID: str
     """Идентификатор"""
-    last_value: float = Field(alias="PreviousMeterReadingResult")
+    PreviousMeterReadingResult: float
     """Последние показания"""
-    last_date: Date = Field(alias="PreviousMeterReadingDate")
+    PreviousMeterReadingDate: Date
     """Дата и время внесения последних показаний"""
-    reason: str = Field(alias="ReasonText")
+    ReasonText: str
     """"""
-    zone: str = Field(alias="Zwarttxt")
+    Zwarttxt: str
     """Зона"""
-
-
-class MeterReadingResult(BaseModel):
-    """Показание прибора"""
-
-    id: str = Field(alias="MeterReadingResultID")
-    """Идентификатор"""
-    register_id: str = Field(alias="RegisterID")
-    """ID регистра хранения счетчика (`1` - день, `2` - ночь, `3` - полупик)"""
-    value: float = Field(alias="ReadingResult")
-    """Показание"""
-    date: DateTime = Field(alias="ReadingDateTime")
-    """Дата и время предоставления данных"""
-    zone: str = Field(alias="Zwarttxt")
-    """Зона"""
-    source: str = Field(alias="Text40")
-    """Источник показаний"""
-    accepted: bool = Field(alias="Prkrasch")
-    """Принято к расчету"""
-
-    @field_validator("accepted", mode="before")
-    def is_empty(cls, value: str) -> bool:
-        return bool(value)
 
 
 class Premise(BaseModel):
     """Помещение установки прибора учета"""
 
-    id: str = Field(alias="PremiseID")
+    PremiseID: str
     """ID"""
     PremiseTypeID: str
     """"""
@@ -258,35 +300,35 @@ class Premise(BaseModel):
 class AddressInfo(BaseModel):
     """Адрес"""
 
-    postal_code: str = Field(alias="PostalCode")
+    PostalCode: str
     """Индекс"""
-    country: str = Field(alias="CountryName")
+    CountryName: str
     """Страна"""
-    region: str = Field(alias="RegionName")
+    RegionName: str
     """Регион"""
-    city: str = Field(alias="City")
+    City: str
     """Город"""
-    street: str = Field(alias="Street")
+    Street: str
     """Улица"""
-    house: str = Field(alias="HouseNo")
+    HouseNo: str
     """Дом"""
-    room: str = Field(alias="RoomNo")
+    RoomNo: str
     """Квартира"""
 
 
 class Invoice(BaseModel):
     """Счет на оплату"""
 
-    id: str = Field(alias="InvoiceID")
+    InvoiceID: str
     """Идентификатор"""
-    date: Date = Field(alias="InvoiceDate")
+    InvoiceDate: Date
     """Дата выставления"""
-    due_date: Date = Field(alias="DueDate")
+    DueDate: Date
     """Крайняя дата оплаты"""
-    due: float = Field(alias="AmountDue")
+    AmountDue: float
     """Сумма к оплате"""
-    paid: float = Field(alias="AmountPaid")
+    AmountPaid: float
     """Оплаченная сумма"""
-    remaining: float = Field(alias="AmountRemaining")
+    AmountRemaining: float
     """Оставшаяся сумма"""
-    status: int = Field(alias="InvoiceStatusID")
+    InvoiceStatusID: int

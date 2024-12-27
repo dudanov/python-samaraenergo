@@ -1,8 +1,22 @@
 import asyncio
+import datetime as dt
 import json
 import logging
 
 from .client import SamaraEnergoClient
+from .models import MeterReadingResult
+
+rr = MeterReadingResult(
+    DependentMeterReadingResults=[],
+    ReadingDateTime=dt.datetime.now(),
+    DeviceID="",
+    MeterReadingNoteID="",
+    RegisterID="",
+    ReadingResult=4.4,
+)
+
+tt = rr.model_dump_json(indent=4)
+print(tt)
 
 logging.basicConfig(level=logging.DEBUG)
 

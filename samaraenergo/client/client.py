@@ -112,11 +112,10 @@ class SamaraEnergoClient:
             "Accounts",  # лицевые счета
             # "StandardAccountAddress",
             # "PaymentDocuments",  # документы об оплате
-            # "ContractAccounts/AccountAddress",  # адрес
             # "ContractAccounts/Invoices",  # счета на оплату
             # "ContractAccounts/Contracts/ContractConsumptionValues",  # биллинговое потребление энергии
             # "ContractAccounts/Contracts/Devices/RegistersToRead",  # регистры приборов учета
-            # "ContractAccounts/Contracts/Devices/MeterReadingResults",  # показания счетчиков
+            "ContractAccounts/Contracts/Devices/MeterReadingResults",  # показания счетчиков
         )
 
         tm2 = perf_counter()
