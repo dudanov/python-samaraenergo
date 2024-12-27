@@ -2,13 +2,14 @@ import asyncio
 import datetime as dt
 import json
 import logging
+from zoneinfo import ZoneInfo
 
 from .client import SamaraEnergoClient
 from .models import MeterReadingResult
 
 rr = MeterReadingResult(
     DependentMeterReadingResults=[],
-    ReadingDateTime=dt.datetime.now(),
+    ReadingDateTime=dt.datetime.now(ZoneInfo("Europe/Samara")),
     DeviceID="",
     MeterReadingNoteID="",
     RegisterID="",
