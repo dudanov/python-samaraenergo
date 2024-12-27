@@ -28,8 +28,8 @@ def _datetime_validator(data: Any) -> Any:
     if data == _NONE_TIMESTAMP:
         return None
 
-    if (m := _RE_DATE.fullmatch(data)) and (m := m.group(1)):
-        return m
+    if m := _RE_DATE.fullmatch(data):
+        return m.group(1)
 
     raise ValueError("Должна быть строка вида '/Date(milliseconds)/'")
 
