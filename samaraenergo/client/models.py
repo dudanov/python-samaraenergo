@@ -36,7 +36,7 @@ def _datetime_validator(data: Any) -> Any:
 
 def _datetime_serializer(x: dt.date | None) -> str:
     if x is None:
-        return "/Date(253402214400000)/"
+        return _NONE_TIMESTAMP
 
     if not isinstance(x, dt.datetime):
         x = dt.datetime(x.year, x.month, x.day)
