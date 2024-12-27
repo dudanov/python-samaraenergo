@@ -35,7 +35,9 @@ def _datetime_serializer(x: dt.date | None) -> str:
     if x is None:
         return "/Date(253402214400000)/"
 
-    x = dt.datetime(x.year, x.month, x.day)
+    if not isinstance(x, dt.datetime):
+        x = dt.datetime(x.year, x.month, x.day)
+
     return f"/Date({x.timestamp():.0f}000)/"
 
 
