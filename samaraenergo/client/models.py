@@ -39,7 +39,7 @@ def _datetime_serializer(x: dt.date | None) -> str:
         return _NONE_DATETIME
 
     if not isinstance(x, dt.datetime):
-        x = dt.datetime(x.year, x.month, x.day)
+        x = dt.datetime(x.year, x.month, x.day, tzinfo=dt.UTC)
 
     elif x.tzinfo is None:
         raise ValueError("naive datetime is not supported")
