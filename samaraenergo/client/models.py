@@ -17,16 +17,19 @@ from pydantic import (
 
 _LOGGER = logging.getLogger(__name__)
 
+_NONE_TIMESTAMP = "/Date(253402214400000)/"
 _RE_DATE = re.compile(r"\/Date\((\d+)000\)\/")
-_NONE_TIMESTAMP = "253402214400"
 
 
 def _datetime_validator(data: Any) -> Any:
     if isinstance(data, dt.date):
         return data
 
+    if data == _NONE_TIMESTAMP:
+        return None
+
     if (m := _RE_DATE.fullmatch(data)) and (m := m.group(1)):
-        return m if m != _NONE_TIMESTAMP else None
+        return m
 
     raise ValueError("Должна быть строка вида '/Date(milliseconds)/'")
 
