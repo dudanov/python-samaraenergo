@@ -41,7 +41,7 @@ def _datetime_serializer(x: dt.date | None) -> str:
     if isinstance(x, dt.datetime):
         x = x.astimezone(dt.UTC)
     else:
-        x = dt.datetime.combine(x, dt.time.min)
+        x = dt.datetime(x.year, x.month, x.day)
 
     return f"/Date({x.timestamp():.0f}000)/"
 
