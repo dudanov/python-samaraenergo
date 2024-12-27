@@ -17,7 +17,7 @@ from pydantic import (
 
 _LOGGER = logging.getLogger(__name__)
 
-_NONE_TIMESTAMP = "/Date(253402214400000)/"
+_NONE_DATETIME = "/Date(253402214400000)/"
 _RE_DATE = re.compile(r"\/Date\((\d+)000\)\/")
 
 
@@ -25,7 +25,7 @@ def _datetime_validator(data: Any) -> Any:
     if isinstance(data, dt.date):
         return data
 
-    if data == _NONE_TIMESTAMP:
+    if data == _NONE_DATETIME:
         return None
 
     if m := _RE_DATE.fullmatch(data):
@@ -36,7 +36,7 @@ def _datetime_validator(data: Any) -> Any:
 
 def _datetime_serializer(x: dt.date | None) -> str:
     if x is None:
-        return _NONE_TIMESTAMP
+        return _NONE_DATETIME
 
     if isinstance(x, dt.datetime):
         x = x.astimezone(dt.UTC)
@@ -49,7 +49,7 @@ def _datetime_serializer(x: dt.date | None) -> str:
 type _Date[T: dt.date] = Annotated[
     T | None,
     BeforeValidator(_datetime_validator),
-    PlainSerializer(_datetime_serializer),
+    PlainSerializer(_datetime_serializer, return_type=str),
 ]
 
 type Date = _Date[dt.date]
