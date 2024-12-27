@@ -39,17 +39,14 @@ def _datetime_serializer(x: dt.date | None) -> str:
     return f"/Date({x.timestamp():.0f}000)/"
 
 
-Date = Annotated[
-    dt.date | None,
+type _Date[T: dt.date] = Annotated[
+    T | None,
     BeforeValidator(_datetime_validator),
     PlainSerializer(_datetime_serializer),
 ]
 
-DateTime = Annotated[
-    dt.datetime | None,
-    BeforeValidator(_datetime_validator),
-    PlainSerializer(_datetime_serializer),
-]
+type Date = _Date[dt.date]
+type DateTime = _Date[dt.datetime]
 
 
 def _deferrable_validator(data: Any, *, multiple: bool) -> Any:
