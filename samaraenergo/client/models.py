@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime as dt
 import logging
 import re
+from decimal import Decimal
 from functools import partial
 from typing import Annotated, Any
 
@@ -137,7 +138,7 @@ class PaymentDocument(BaseModel):
     """Идентификатор"""
     ExecutionDate: Date
     """Дата оплаты"""
-    Amount: float
+    Amount: Decimal
     """Сумма"""
     PaymentMethodDescription: str
     """Метод оплаты"""
@@ -148,11 +149,11 @@ class ContractAccount(BaseModel):
 
     ContractAccountID: str
     """Идентификатор"""
-    Preisbtr1: float
+    Preisbtr1: Decimal
     """Стоимость КВт*ч, день"""
-    Preisbtr2: float
+    Preisbtr2: Decimal
     """Стоимость КВт*ч, ночь"""
-    Preisbtr3: float
+    Preisbtr3: Decimal
     """Стоимость КВт*ч, полупик"""
     Ttypbez: str
     """Тип тарифа"""
@@ -162,7 +163,7 @@ class ContractAccount(BaseModel):
     """Кол-во прописанных"""
     Livecnt: int
     """Кол-во проживающих"""
-    Homes: float
+    Homes: Decimal
     """Общая площадь, м2"""
     Roomcnt: int
     """Кол-во комнат"""
@@ -179,9 +180,9 @@ class ContractConsumptionValue(BaseModel):
     """Начало расчетного периода"""
     EndDate: Date
     """Конец расчетного периода"""
-    BilledAmount: float
+    BilledAmount: Decimal
     """Сумма"""
-    ConsumptionValue: float
+    ConsumptionValue: Decimal
     """Энергия"""
 
 
@@ -191,7 +192,7 @@ class MeterReadingResult(BaseModel):
     DeviceID: str
     MeterReadingNoteID: str
     RegisterID: str
-    ReadingResult: float
+    ReadingResult: Decimal
 
 
 class MeterReadingResult2(BaseModel):
@@ -201,7 +202,7 @@ class MeterReadingResult2(BaseModel):
     """Идентификатор"""
     RegisterID: str
     """ID регистра хранения счетчика (`001` - день, `002` - ночь, `003` - полупик)"""
-    ReadingResult: float
+    ReadingResult: Decimal
     """Показание"""
     ReadingDateTime: DateTime
     """Дата и время предоставления данных"""
@@ -258,7 +259,7 @@ class Device(BaseModel):
     """Знаки до запятой"""
     Stanznac: str
     """Знаки после запятой"""
-    Zwfakt: float
+    Zwfakt: Decimal
     """"""
     Baukltxt: str
     """"""
@@ -281,7 +282,7 @@ class RegisterToRead(BaseModel):
 
     RegisterID: str
     """Идентификатор"""
-    PreviousMeterReadingResult: float
+    PreviousMeterReadingResult: Decimal
     """Последние показания"""
     PreviousMeterReadingDate: Date
     """Дата и время внесения последних показаний"""
@@ -330,10 +331,10 @@ class Invoice(BaseModel):
     """Дата выставления"""
     DueDate: Date
     """Крайняя дата оплаты"""
-    AmountDue: float
+    AmountDue: Decimal
     """Сумма к оплате"""
-    AmountPaid: float
+    AmountPaid: Decimal
     """Оплаченная сумма"""
-    AmountRemaining: float
+    AmountRemaining: Decimal
     """Оставшаяся сумма"""
     InvoiceStatusID: int

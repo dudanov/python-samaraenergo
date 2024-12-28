@@ -2,6 +2,7 @@ import asyncio
 import datetime as dt
 import json
 import logging
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from .client import SamaraEnergoClient
@@ -13,7 +14,7 @@ rr = MeterReadingResult(
     DeviceID="",
     MeterReadingNoteID="",
     RegisterID="",
-    ReadingResult=4.4,
+    ReadingResult=Decimal("4.454220000"),
 )
 
 tt = rr.model_dump_json(indent=4)
