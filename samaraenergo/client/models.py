@@ -190,7 +190,6 @@ class MeterReadingResult(BaseModel):
     """
     Объект передачи данных о потреблении энергии.
     Путь POST запроса: 'MeterReadingResults'
-    
     """
 
     DependentMeterReadingResults: DeferrableList[MeterReadingResult]

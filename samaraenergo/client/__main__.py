@@ -6,19 +6,6 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from .client import SamaraEnergoClient
-from .models import MeterReadingResult
-
-rr = MeterReadingResult(
-    DependentMeterReadingResults=[],
-    ReadingDateTime=dt.datetime.now(ZoneInfo("Europe/Samara")),
-    DeviceID="",
-    MeterReadingNoteID="",
-    RegisterID="",
-    ReadingResult=Decimal("4.454220000"),
-)
-
-tt = rr.model_dump_json(indent=4)
-print(tt)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -28,8 +15,14 @@ with open("secrets.json") as f:
 
 async def main():
     async with SamaraEnergoClient(secrets["login"], secrets["password"]) as cli:
-        a = await cli.get_info()
-        print(a)
+        # a = await cli.get_info()
+        # print(a)
+        await cli.set_value(
+            Decimal(12),
+            Decimal(13),
+            device_id="11712434",
+            datetime=dt.datetime.now(ZoneInfo("Europe/Samara")),
+        )
 
 
 asyncio.run(main())

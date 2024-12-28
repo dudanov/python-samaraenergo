@@ -1,13 +1,15 @@
+import datetime as dt
 import json
 import logging
 from collections import ChainMap
+from decimal import Decimal
 from time import perf_counter
 from typing import Awaitable, Final
 
 import aiohttp
 import yarl
 
-from .models import Account, Invoice, PaymentDocument, ResponseModel
+from .models import Account, Invoice, MeterReadingResult, PaymentDocument, ResponseModel
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -15,7 +17,9 @@ _BASE_URL: Final = yarl.URL(
     "https://lk.samaraenergo.ru/sap/opu/odata/sap/Z_ERP_UTILITIES_UMC_SRV_01"
 )
 
-_HEADERS: Final = {"Accept": "application/json"}
+_HEADER_ACCEPT_JSON: Final = {"Accept": "application/json"}
+_HEADER_CONTENT_JSON = {"Content-Type": "application/json"}
+_X_CSRF_TOKEN = "x-csrf-token"
 
 
 def _dump(data: bytes):
@@ -73,7 +77,7 @@ class SamaraEnergoClient:
         if expand:
             params = ChainMap(self._BASE_PARAMS, {"$expand": ",".join(expand)})
 
-        async with self._cli.get(url, params=params, headers=_HEADERS) as x:
+        async with self._cli.get(url, params=params, headers=_HEADER_ACCEPT_JSON) as x:
             return await x.read()
 
     def _account_get(self, path: str, account: int, *expand: str) -> Awaitable[bytes]:
@@ -128,3 +132,47 @@ class SamaraEnergoClient:
         _LOGGER.debug("Validation time: %f", perf_counter() - tm2)
 
         return x.root
+
+    async def _fetch_csrf_token(self):
+        async with self._cli.head(
+            _BASE_URL,
+            params=self._BASE_PARAMS,
+            headers={_X_CSRF_TOKEN: "Fetch"},
+        ) as x:
+            return {_X_CSRF_TOKEN: x.headers[_X_CSRF_TOKEN]}
+
+    async def set_value(self, *values: Decimal, device_id: str, datetime: dt.datetime):
+        assert 1 <= len(values) <= 3
+
+        results: list[MeterReadingResult] = []
+
+        for id, value in enumerate(values, 1):
+            results.append(
+                MeterReadingResult(
+                    DependentMeterReadingResults=[],
+                    ReadingDateTime=datetime,
+                    DeviceID=device_id,
+                    MeterReadingNoteID="920",
+                    RegisterID=f"00{id}",
+                    ReadingResult=value,
+                )
+            )
+
+        master, *slaves = results
+        master.DependentMeterReadingResults = slaves
+        json_str = master.model_dump_json()
+
+        headers = ChainMap(
+            _HEADER_ACCEPT_JSON,
+            _HEADER_CONTENT_JSON,
+            await self._fetch_csrf_token(),
+        )
+
+        async with self._cli.post(
+            _BASE_URL.joinpath("MeterReadingResults"),
+            params=self._BASE_PARAMS,
+            data=json_str,
+            headers=headers,
+        ) as x:
+            tt = await x.read()
+            _dump(tt)
