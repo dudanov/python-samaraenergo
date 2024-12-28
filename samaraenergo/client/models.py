@@ -108,38 +108,38 @@ class Account(BaseModel):
 
     AccountID: str
     """Идентификатор"""
-    FullName: str
-    """ФИО пользователя личного кабинета"""
-    StandardAccountAddress: Deferrable[AccountAddress]
-    """Адрес"""
     ContractAccounts: DeferrableList[ContractAccount]
     """Аккаунты договоров"""
+    FullName: str
+    """ФИО пользователя личного кабинета"""
     PaymentDocuments: DeferrableList[PaymentDocument]
     """Документы об оплате"""
+    StandardAccountAddress: Deferrable[AccountAddress]
+    """Адрес"""
 
 
 class AccountAddress(BaseModel):
     """"""
 
-    AddressID: str
     AccountID: str
+    AddressID: str
     AddressInfo: AddressInfo
+    # AccountAddressDependentEmails
     # AccountAddressDependentFaxes:
     # AccountAddressDependentMobilePhones
     # AccountAddressDependentPhones
-    # AccountAddressDependentEmails
     # AccountAddressUsages
 
 
 class PaymentDocument(BaseModel):
     """Документ оплаты"""
 
-    PaymentDocumentID: str
-    """Идентификатор"""
-    ExecutionDate: Date
-    """Дата оплаты"""
     Amount: Decimal
     """Сумма"""
+    ExecutionDate: Date
+    """Дата оплаты"""
+    PaymentDocumentID: str
+    """Идентификатор"""
     PaymentMethodDescription: str
     """Метод оплаты"""
 
@@ -149,50 +149,62 @@ class ContractAccount(BaseModel):
 
     ContractAccountID: str
     """Идентификатор"""
+    Contracts: DeferrableList[Contract]
+    """Договоры"""
+    Homes: Decimal
+    """Общая площадь, м2"""
+    Invoices: DeferrableList[Invoice]
+    """Счета на оплату"""
+    Livecnt: Decimal
+    """Кол-во проживающих"""
     Preisbtr1: Decimal
     """Стоимость КВт*ч, день"""
     Preisbtr2: Decimal
     """Стоимость КВт*ч, ночь"""
     Preisbtr3: Decimal
     """Стоимость КВт*ч, полупик"""
+    Regcnt: Decimal
+    """Кол-во прописанных"""
+    Roomcnt: int
+    """Кол-во комнат"""
     Ttypbez: str
     """Тип тарифа"""
     Vkona: str
     """Лицевой счет"""
-    Regcnt: Decimal
-    """Кол-во прописанных"""
-    Livecnt: Decimal
-    """Кол-во проживающих"""
-    Homes: Decimal
-    """Общая площадь, м2"""
-    Roomcnt: int
-    """Кол-во комнат"""
-    Contracts: DeferrableList[Contract]
-    """Договоры"""
-    Invoices: DeferrableList[Invoice]
-    """Счета на оплату"""
 
 
 class ContractConsumptionValue(BaseModel):
-    ContractID: str
-    """Идентификатор"""
-    StartDate: Date
-    """Начало расчетного периода"""
-    EndDate: Date
-    """Конец расчетного периода"""
     BilledAmount: Decimal
     """Сумма"""
     ConsumptionValue: Decimal
     """Энергия"""
+    ContractID: str
+    """Идентификатор"""
+    EndDate: Date
+    """Конец расчетного периода"""
+    StartDate: Date
+    """Начало расчетного периода"""
 
 
 class MeterReadingResult(BaseModel):
+    """
+    Объект передачи данных о потреблении энергии.
+    Путь POST запроса: 'MeterReadingResults'
+    
+    """
+
     DependentMeterReadingResults: DeferrableList[MeterReadingResult]
-    ReadingDateTime: DateTime
+    """Связанные показания"""
     DeviceID: str
+    """Идентификатор прибора учета"""
     MeterReadingNoteID: str
-    RegisterID: str
+    """Источник передачи. 920: мобильный личный кабинет, 01: оценка результата считывания"""
+    ReadingDateTime: DateTime
+    """Дата и время чтения показания"""
     ReadingResult: Decimal
+    """Показание"""
+    RegisterID: str
+    """Идентификатор регистра прибора учета"""
 
 
 class MeterReadingResult2(BaseModel):
@@ -200,18 +212,18 @@ class MeterReadingResult2(BaseModel):
 
     MeterReadingResultID: str
     """Идентификатор"""
-    RegisterID: str
-    """ID регистра хранения счетчика (`001` - день, `002` - ночь, `003` - полупик)"""
-    ReadingResult: Decimal
-    """Показание"""
-    ReadingDateTime: DateTime
-    """Дата и время предоставления данных"""
-    Zwarttxt: str
-    """Зона"""
-    Text40: str
-    """Источник показаний"""
     Prkrasch: bool
     """Принято к расчету"""
+    ReadingDateTime: DateTime
+    """Дата и время предоставления данных"""
+    ReadingResult: Decimal
+    """Показание"""
+    RegisterID: str
+    """ID регистра хранения счетчика (`001` - день, `002` - ночь, `003` - полупик)"""
+    Text40: str
+    """Источник показаний"""
+    Zwarttxt: str
+    """Зона"""
 
     @field_validator("Prkrasch", mode="before")
     def is_empty(cls, value: str) -> bool:
@@ -221,22 +233,23 @@ class MeterReadingResult2(BaseModel):
 class Contract(BaseModel):
     """Договор"""
 
+    ContractConsumptionValues: DeferrableList[ContractConsumptionValue]
+    """"""
     ContractID: str
     """Идентификатор"""
+    Devices: DeferrableList[Device]
+    """Приборы учета"""
     MoveInDate: Date
     """Дата заключения"""
     MoveOutDate: Date
     """Дата расторжения"""
-    Devices: DeferrableList[Device]
-    """Приборы учета"""
-    ContractConsumptionValues: DeferrableList[ContractConsumptionValue]
 
 
 class Device(BaseModel):
     """Прибор учета"""
 
     DeviceID: str
-    """Идентификатор"""
+    """Идентификатор прибора учета"""
     SerialNumber: str
     """Серийный номер"""
     Vbsarttext: str
@@ -295,46 +308,47 @@ class RegisterToRead(BaseModel):
 class Premise(BaseModel):
     """Помещение установки прибора учета"""
 
+    AddressInfo: AddressInfo
+    """"""
     PremiseID: str
     """ID"""
     PremiseTypeID: str
-    """"""
-    AddressInfo: AddressInfo
     """"""
 
 
 class AddressInfo(BaseModel):
     """Адрес"""
 
-    PostalCode: str
-    """Индекс"""
-    CountryName: str
-    """Страна"""
-    RegionName: str
-    """Регион"""
     City: str
     """Город"""
-    Street: str
-    """Улица"""
+    CountryName: str
+    """Страна"""
     HouseNo: str
     """Дом"""
+    PostalCode: str
+    """Индекс"""
+    RegionName: str
+    """Регион"""
     RoomNo: str
     """Квартира"""
+    Street: str
+    """Улица"""
 
 
 class Invoice(BaseModel):
     """Счет на оплату"""
 
-    InvoiceID: str
-    """Идентификатор"""
-    InvoiceDate: Date
-    """Дата выставления"""
-    DueDate: Date
-    """Крайняя дата оплаты"""
     AmountDue: Decimal
     """Сумма к оплате"""
     AmountPaid: Decimal
     """Оплаченная сумма"""
     AmountRemaining: Decimal
     """Оставшаяся сумма"""
+    DueDate: Date
+    """Крайняя дата оплаты"""
+    InvoiceDate: Date
+    """Дата выставления"""
+    InvoiceID: str
+    """Идентификатор"""
     InvoiceStatusID: str
+    """Идентификатор статуса"""

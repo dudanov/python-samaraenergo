@@ -116,6 +116,7 @@ class SamaraEnergoClient:
             # "ContractAccounts/Contracts/ContractConsumptionValues",  # биллинговое потребление энергии
             # "ContractAccounts/Contracts/Devices/RegistersToRead",  # регистры приборов учета
             "ContractAccounts/Contracts/Devices/MeterReadingResults",  # показания счетчиков
+            "ContractAccounts/Contracts/Devices/MeterReadingResults/MeterReadingNote",  # показания счетчиков
         )
 
         tm2 = perf_counter()
