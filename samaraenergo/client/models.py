@@ -159,9 +159,9 @@ class ContractAccount(BaseModel):
     """Тип тарифа"""
     Vkona: str
     """Лицевой счет"""
-    Regcnt: int
+    Regcnt: Decimal
     """Кол-во прописанных"""
-    Livecnt: int
+    Livecnt: Decimal
     """Кол-во проживающих"""
     Homes: Decimal
     """Общая площадь, м2"""
@@ -337,4 +337,4 @@ class Invoice(BaseModel):
     """Оплаченная сумма"""
     AmountRemaining: Decimal
     """Оставшаяся сумма"""
-    InvoiceStatusID: int
+    InvoiceStatusID: str
