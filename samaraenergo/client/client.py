@@ -141,22 +141,21 @@ class SamaraEnergoClient:
         ) as x:
             return {_X_CSRF_TOKEN: x.headers[_X_CSRF_TOKEN]}
 
-    async def set_value(self, *values: Decimal, device_id: str, datetime: dt.datetime):
+    async def set_value(self, *values: Decimal, device_id: str):
         assert 1 <= len(values) <= 3
+        datetime = dt.datetime.now(dt.UTC)
 
-        results: list[MeterReadingResult] = []
-
-        for id, value in enumerate(values, 1):
-            results.append(
-                MeterReadingResult(
-                    DependentMeterReadingResults=[],
-                    ReadingDateTime=datetime,
-                    DeviceID=device_id,
-                    MeterReadingNoteID="920",
-                    RegisterID=f"00{id}",
-                    ReadingResult=value,
-                )
+        results = [
+            MeterReadingResult(
+                DependentMeterReadingResults=[],
+                ReadingDateTime=datetime,
+                DeviceID=device_id,
+                MeterReadingNoteID="920",
+                RegisterID=f"{id:03}",
+                ReadingResult=value,
             )
+            for id, value in enumerate(values, 1)
+        ]
 
         master, *slaves = results
         master.DependentMeterReadingResults = slaves
