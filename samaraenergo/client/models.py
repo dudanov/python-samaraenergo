@@ -4,7 +4,6 @@ import datetime as dt
 import logging
 import re
 from decimal import Decimal
-from functools import partial
 from typing import Annotated, Any, Final
 
 from pydantic import (
@@ -58,49 +57,44 @@ type Date = _Date[dt.date]
 type DateTime = _Date[dt.datetime]
 
 
-def _deferrable_validator(data: Any, *, multiple: bool) -> Any:
-    """Валидатор моделей с отложенной загрузкой"""
+def _deferrable_validator(data: Any) -> Any:
+    """Валидатор полей с отложенной загрузкой"""
 
     if not isinstance(data, dict):
         return data
 
-    # для отложенных объектов вернем пустой список или `None`
     if "__deferred" in data:
-        return [] if multiple else None
+        return
 
-    try:
-        return data["results"] if multiple else data
-
-    except KeyError:
-        raise ValueError("ожидается ключ 'results'")
+    return data.get("results", data)
 
 
-type Deferrable[T: BaseModel] = Annotated[
-    T | None, BeforeValidator(partial(_deferrable_validator, multiple=False))
-]
-"""Модель с отложенной загрузкой"""
+type _Deferrable[T] = Annotated[T | None, BeforeValidator(_deferrable_validator)]
+"""Базовый шаблонный тип поля с отложенной загрузкой"""
+
+type Deferrable[T: BaseModel] = _Deferrable[T]
+"""Шаблонный тип поля модели с отложенной загрузкой"""
+
+type DeferrableList[T: BaseModel] = _Deferrable[list[T]]
+"""Шаблонный тип поля списка моделей с отложенной загрузкой"""
 
 
-type DeferrableList[T: BaseModel] = Annotated[
-    list[T], BeforeValidator(partial(_deferrable_validator, multiple=True))
-]
-"""Список моделей с отложенной загрузкой"""
-
-
-class ResponseModel[T: BaseModel](RootModel[list[T]]):
-    """Корневая модель ответа на запросы"""
+class _ResponseModel[T](RootModel[T]):
+    """Базовая корневая модель ответа на запрос"""
 
     @model_validator(mode="before")
     @classmethod
     def before_validator(cls, data: Any) -> Any:
-        if not isinstance(data, dict):
-            raise ValueError("ожидается JSON объект")
+        data = data["d"]
+        return data.get("results", data)
 
-        try:
-            return data["d"]["results"]
 
-        except KeyError:
-            raise ValueError("ожидаются последовательные ключи: 'd' и 'results'")
+class ResponseModel[T: BaseModel](_ResponseModel[T]):
+    """Модель ответа из одной корневой модели"""
+
+
+class ResponseListModel[T: BaseModel](_ResponseModel[list[T]]):
+    """Модель ответа из корневого списка моделей"""
 
 
 class Account(BaseModel):
@@ -203,22 +197,16 @@ class MeterReadingResult(BaseModel):
     ReadingResult: Decimal
     """Показание"""
     RegisterID: str
-    """Идентификатор регистра прибора учета"""
+    """ID регистра хранения счетчика (`001` - день, `002` - ночь, `003` - полупик)"""
 
 
-class MeterReadingResult2(BaseModel):
+class MeterReadingResult2(MeterReadingResult):
     """Показание прибора"""
 
     MeterReadingResultID: str
     """Идентификатор"""
     Prkrasch: bool
     """Принято к расчету"""
-    ReadingDateTime: DateTime
-    """Дата и время предоставления данных"""
-    ReadingResult: Decimal
-    """Показание"""
-    RegisterID: str
-    """ID регистра хранения счетчика (`001` - день, `002` - ночь, `003` - полупик)"""
     Text40: str
     """Источник показаний"""
     Zwarttxt: str

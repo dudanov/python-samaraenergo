@@ -15,7 +15,8 @@ async def main():
     async with SamaraEnergoClient(secrets["login"], secrets["password"]) as cli:
         # a = await cli.get_info()
         # print(a)
-        await cli.set_value(Decimal(12), Decimal(13), device_id="11712434")
+        rr = await cli.set_value(Decimal(12), Decimal(13), device_id="11712434")
+        print(rr)
 
 
 asyncio.run(main())

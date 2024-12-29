@@ -9,7 +9,15 @@ from typing import Awaitable, Final
 import aiohttp
 import yarl
 
-from .models import Account, Invoice, MeterReadingResult, PaymentDocument, ResponseModel
+from .models import (
+    Account,
+    Invoice,
+    MeterReadingResult,
+    MeterReadingResult2,
+    PaymentDocument,
+    ResponseListModel,
+    ResponseModel,
+)
 
 _LOGGER: Final = logging.getLogger(__name__)
 
@@ -87,7 +95,7 @@ class SamaraEnergoClient:
         """Запрос всех счетов по аккаунту"""
 
         x = await self._account_get("Invoices", account)
-        x = ResponseModel[Invoice].model_validate_json(x)
+        x = ResponseListModel[Invoice].model_validate_json(x)
 
         return x.root
 
@@ -100,7 +108,7 @@ class SamaraEnergoClient:
         """Запрос информации об оплатах"""
 
         x = await self._account_get("PaymentDocuments", account)
-        x = ResponseModel[PaymentDocument].model_validate_json(x)
+        x = ResponseListModel[PaymentDocument].model_validate_json(x)
 
         return x.root
 
@@ -127,7 +135,7 @@ class SamaraEnergoClient:
         _LOGGER.debug("Fetching time: %f", tm2 - tm)
         _dump(x)
 
-        x = ResponseModel[Account].model_validate_json(x)
+        x = ResponseListModel[Account].model_validate_json(x)
 
         _LOGGER.debug("Validation time: %f", perf_counter() - tm2)
 
@@ -157,9 +165,9 @@ class SamaraEnergoClient:
             for id, value in enumerate(values, 1)
         ]
 
-        master, *slaves = results
-        master.DependentMeterReadingResults = slaves
-        json_str = master.model_dump_json()
+        primary, *secondary = results
+        primary.DependentMeterReadingResults = secondary
+        json_str = primary.model_dump_json()
 
         headers = ChainMap(
             _HEADER_ACCEPT_JSON,
@@ -173,5 +181,7 @@ class SamaraEnergoClient:
             data=json_str,
             headers=headers,
         ) as x:
-            tt = await x.read()
-            _dump(tt)
+            result = await x.read()
+            _dump(result)
+            result = ResponseModel[MeterReadingResult2].model_validate_json(result)
+            return result.root
