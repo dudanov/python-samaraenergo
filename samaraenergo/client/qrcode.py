@@ -1,12 +1,12 @@
 import io
 import logging
-from typing import Any, Mapping, cast
+from typing import Any, Final, Mapping, cast
 
 import PIL.Image
 import pymupdf
 from PIL.Image import Image, Palette
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER: Final = logging.getLogger(__name__)
 
 
 def save_to_png(img: Image) -> bytes:

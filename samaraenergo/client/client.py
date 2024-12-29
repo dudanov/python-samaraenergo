@@ -11,15 +11,15 @@ import yarl
 
 from .models import Account, Invoice, MeterReadingResult, PaymentDocument, ResponseModel
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER: Final = logging.getLogger(__name__)
 
 _BASE_URL: Final = yarl.URL(
     "https://lk.samaraenergo.ru/sap/opu/odata/sap/Z_ERP_UTILITIES_UMC_SRV_01"
 )
 
 _HEADER_ACCEPT_JSON: Final = {"Accept": "application/json"}
-_HEADER_CONTENT_JSON = {"Content-Type": "application/json"}
-_X_CSRF_TOKEN = "x-csrf-token"
+_HEADER_CONTENT_JSON: Final = {"Content-Type": "application/json"}
+_X_CSRF_TOKEN: Final = "x-csrf-token"
 
 
 def _dump(data: bytes):
@@ -46,7 +46,7 @@ class SamaraEnergoClient:
         Создает клиент личного кабинета СамараЭнерго.
 
         Параметры:
-        - `login`: логин (электронная почта).
+        - `user`: идентификатор личного счета.
         - `password`: пароль.
         - `session`: готовый объект `aiohttp.ClientSession`.
         - `close_connector`: закрытие коннектора.

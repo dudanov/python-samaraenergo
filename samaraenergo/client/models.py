@@ -5,7 +5,7 @@ import logging
 import re
 from decimal import Decimal
 from functools import partial
-from typing import Annotated, Any
+from typing import Annotated, Any, Final
 
 from pydantic import (
     BaseModel,
@@ -16,10 +16,10 @@ from pydantic import (
     model_validator,
 )
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER: Final = logging.getLogger(__name__)
 
-_NONE_DATETIME = "/Date(253402214400000)/"
-_RE_DATE = re.compile(r"\/Date\((\d+)000\)\/")
+_NONE_DATETIME: Final = "/Date(253402214400000)/"
+_RE_DATE: Final = re.compile(r"\/Date\((\d+)000\)\/")
 
 
 def _datetime_validator(data: Any) -> Any:
