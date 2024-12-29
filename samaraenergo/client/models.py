@@ -21,6 +21,10 @@ _NONE_DATETIME: Final = "/Date(253402214400000)/"
 _RE_DATE: Final = re.compile(r"\/Date\((\d+)000\)\/")
 
 
+class SEBaseModel(BaseModel):
+    """Базовая модель для шаблонной типизации"""
+
+
 def _datetime_validator(data: Any) -> Any:
     if isinstance(data, dt.date):
         return data
@@ -72,10 +76,10 @@ def _deferrable_validator(data: Any) -> Any:
 type _Deferrable[T] = Annotated[T | None, BeforeValidator(_deferrable_validator)]
 """Базовый шаблонный тип поля с отложенной загрузкой"""
 
-type Deferrable[T: BaseModel] = _Deferrable[T]
+type Deferrable[T: SEBaseModel] = _Deferrable[T]
 """Шаблонный тип поля модели с отложенной загрузкой"""
 
-type DeferrableList[T: BaseModel] = _Deferrable[list[T]]
+type DeferrableList[T: SEBaseModel] = _Deferrable[list[T]]
 """Шаблонный тип поля списка моделей с отложенной загрузкой"""
 
 
@@ -89,15 +93,15 @@ class _ResponseModel[T](RootModel[T]):
         return data.get("results", data)
 
 
-class ResponseModel[T: BaseModel](_ResponseModel[T]):
+class ResponseModel[T: SEBaseModel](_ResponseModel[T]):
     """Модель ответа из одной корневой модели"""
 
 
-class ResponseListModel[T: BaseModel](_ResponseModel[list[T]]):
+class ResponseListModel[T: SEBaseModel](_ResponseModel[list[T]]):
     """Модель ответа из корневого списка моделей"""
 
 
-class Account(BaseModel):
+class Account(SEBaseModel):
     """Аккаунт личного кабинета"""
 
     AccountID: str
@@ -112,7 +116,7 @@ class Account(BaseModel):
     """Адрес"""
 
 
-class AccountAddress(BaseModel):
+class AccountAddress(SEBaseModel):
     """"""
 
     AccountID: str
@@ -125,7 +129,7 @@ class AccountAddress(BaseModel):
     # AccountAddressUsages
 
 
-class PaymentDocument(BaseModel):
+class PaymentDocument(SEBaseModel):
     """Документ оплаты"""
 
     Amount: Decimal
@@ -138,7 +142,7 @@ class PaymentDocument(BaseModel):
     """Метод оплаты"""
 
 
-class ContractAccount(BaseModel):
+class ContractAccount(SEBaseModel):
     """Аккаунт договора"""
 
     ContractAccountID: str
@@ -167,7 +171,7 @@ class ContractAccount(BaseModel):
     """Лицевой счет"""
 
 
-class ContractConsumptionValue(BaseModel):
+class ContractConsumptionValue(SEBaseModel):
     BilledAmount: Decimal
     """Сумма"""
     ConsumptionValue: Decimal
@@ -180,7 +184,7 @@ class ContractConsumptionValue(BaseModel):
     """Начало расчетного периода"""
 
 
-class MeterReadingResult(BaseModel):
+class MeterReadingResult(SEBaseModel):
     """
     Объект передачи данных о потреблении энергии.
     Путь POST запроса: 'MeterReadingResults'
@@ -217,7 +221,7 @@ class MeterReadingResult2(MeterReadingResult):
         return bool(value)
 
 
-class Contract(BaseModel):
+class Contract(SEBaseModel):
     """Договор"""
 
     ContractConsumptionValues: DeferrableList[ContractConsumptionValue]
@@ -232,7 +236,7 @@ class Contract(BaseModel):
     """Дата расторжения"""
 
 
-class Device(BaseModel):
+class Device(SEBaseModel):
     """Прибор учета"""
 
     DeviceID: str
@@ -277,7 +281,7 @@ class Device(BaseModel):
     """Показания"""
 
 
-class RegisterToRead(BaseModel):
+class RegisterToRead(SEBaseModel):
     """Регистр для чтения"""
 
     RegisterID: str
@@ -292,7 +296,7 @@ class RegisterToRead(BaseModel):
     """Зона"""
 
 
-class Premise(BaseModel):
+class Premise(SEBaseModel):
     """Помещение установки прибора учета"""
 
     AddressInfo: AddressInfo
@@ -303,7 +307,7 @@ class Premise(BaseModel):
     """"""
 
 
-class AddressInfo(BaseModel):
+class AddressInfo(SEBaseModel):
     """Адрес"""
 
     City: str
@@ -322,7 +326,7 @@ class AddressInfo(BaseModel):
     """Улица"""
 
 
-class Invoice(BaseModel):
+class Invoice(SEBaseModel):
     """Счет на оплату"""
 
     AmountDue: Decimal
