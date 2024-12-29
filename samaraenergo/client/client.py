@@ -34,7 +34,7 @@ def _dump(data: bytes):
     obj = json.loads(data.decode())
     s = json.dumps(obj, ensure_ascii=False, indent=4)
 
-    with open("test.json", "w", encoding="utf-8") as f:
+    with open("research/test.json", "w", encoding="utf-8") as f:
         f.write(s)
 
 
@@ -124,11 +124,10 @@ class SamaraEnergoClient:
             "Accounts",  # лицевые счета
             # "StandardAccountAddress",
             # "PaymentDocuments",  # документы об оплате
-            # "ContractAccounts/Invoices",  # счета на оплату
+            "ContractAccounts/Invoices",  # счета на оплату
             # "ContractAccounts/Contracts/ContractConsumptionValues",  # биллинговое потребление энергии
-            # "ContractAccounts/Contracts/Devices/RegistersToRead",  # регистры приборов учета
-            "ContractAccounts/Contracts/Devices/MeterReadingResults",  # показания счетчиков
-            "ContractAccounts/Contracts/Devices/MeterReadingResults/MeterReadingNote",  # показания счетчиков
+            "ContractAccounts/Contracts/Devices/RegistersToRead",  # регистры приборов учета
+            # "ContractAccounts/Contracts/Devices/MeterReadingResults",  # показания счетчиков
         )
 
         tm2 = perf_counter()
@@ -158,7 +157,7 @@ class SamaraEnergoClient:
                 DependentMeterReadingResults=[],
                 ReadingDateTime=datetime,
                 DeviceID=device_id,
-                MeterReadingNoteID="920",
+                MeterReadingNoteID="920",  # мобильный личный кабинет
                 RegisterID=f"{id:03}",
                 ReadingResult=value,
             )

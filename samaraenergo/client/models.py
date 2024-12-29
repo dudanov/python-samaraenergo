@@ -21,8 +21,8 @@ _NONE_DATETIME: Final = "/Date(253402214400000)/"
 _RE_DATE: Final = re.compile(r"\/Date\((\d+)000\)\/")
 
 
-class SEBaseModel(BaseModel):
-    """Базовая модель для шаблонной типизации"""
+class _BaseModel(BaseModel):
+    """Базовая модель шаблонной типизации"""
 
 
 def _datetime_validator(data: Any) -> Any:
@@ -35,7 +35,7 @@ def _datetime_validator(data: Any) -> Any:
     if m := _RE_DATE.fullmatch(data):
         return m.group(1)
 
-    raise ValueError("Должна быть строка вида '/Date(milliseconds)/'")
+    raise ValueError("must be string like '/Date(milliseconds)/'")
 
 
 def _datetime_serializer(x: dt.date | None) -> str:
@@ -76,10 +76,10 @@ def _deferrable_validator(data: Any) -> Any:
 type _Deferrable[T] = Annotated[T | None, BeforeValidator(_deferrable_validator)]
 """Базовый шаблонный тип поля с отложенной загрузкой"""
 
-type Deferrable[T: SEBaseModel] = _Deferrable[T]
+type Deferrable[T: _BaseModel] = _Deferrable[T]
 """Шаблонный тип поля модели с отложенной загрузкой"""
 
-type DeferrableList[T: SEBaseModel] = _Deferrable[list[T]]
+type DeferrableList[T: _BaseModel] = _Deferrable[list[T]]
 """Шаблонный тип поля списка моделей с отложенной загрузкой"""
 
 
@@ -93,15 +93,15 @@ class _ResponseModel[T](RootModel[T]):
         return data.get("results", data)
 
 
-class ResponseModel[T: SEBaseModel](_ResponseModel[T]):
+class ResponseModel[T: _BaseModel](_ResponseModel[T]):
     """Модель ответа из одной корневой модели"""
 
 
-class ResponseListModel[T: SEBaseModel](_ResponseModel[list[T]]):
+class ResponseListModel[T: _BaseModel](_ResponseModel[list[T]]):
     """Модель ответа из корневого списка моделей"""
 
 
-class Account(SEBaseModel):
+class Account(_BaseModel):
     """Аккаунт личного кабинета"""
 
     AccountID: str
@@ -116,7 +116,7 @@ class Account(SEBaseModel):
     """Адрес"""
 
 
-class AccountAddress(SEBaseModel):
+class AccountAddress(_BaseModel):
     """"""
 
     AccountID: str
@@ -129,7 +129,7 @@ class AccountAddress(SEBaseModel):
     # AccountAddressUsages
 
 
-class PaymentDocument(SEBaseModel):
+class PaymentDocument(_BaseModel):
     """Документ оплаты"""
 
     Amount: Decimal
@@ -142,7 +142,7 @@ class PaymentDocument(SEBaseModel):
     """Метод оплаты"""
 
 
-class ContractAccount(SEBaseModel):
+class ContractAccount(_BaseModel):
     """Аккаунт договора"""
 
     ContractAccountID: str
@@ -171,7 +171,7 @@ class ContractAccount(SEBaseModel):
     """Лицевой счет"""
 
 
-class ContractConsumptionValue(SEBaseModel):
+class ContractConsumptionValue(_BaseModel):
     BilledAmount: Decimal
     """Сумма"""
     ConsumptionValue: Decimal
@@ -184,7 +184,7 @@ class ContractConsumptionValue(SEBaseModel):
     """Начало расчетного периода"""
 
 
-class MeterReadingResult(SEBaseModel):
+class MeterReadingResult(_BaseModel):
     """
     Объект передачи данных о потреблении энергии.
     Путь POST запроса: 'MeterReadingResults'
@@ -221,7 +221,7 @@ class MeterReadingResult2(MeterReadingResult):
         return bool(value)
 
 
-class Contract(SEBaseModel):
+class Contract(_BaseModel):
     """Договор"""
 
     ContractConsumptionValues: DeferrableList[ContractConsumptionValue]
@@ -236,7 +236,7 @@ class Contract(SEBaseModel):
     """Дата расторжения"""
 
 
-class Device(SEBaseModel):
+class Device(_BaseModel):
     """Прибор учета"""
 
     DeviceID: str
@@ -277,11 +277,11 @@ class Device(SEBaseModel):
     """Объект электроснабжения"""
     RegistersToRead: DeferrableList[RegisterToRead]
     """Регистры показаний для чтения"""
-    MeterReadingResults: DeferrableList[MeterReadingResult]
+    MeterReadingResults: DeferrableList[MeterReadingResult2]
     """Показания"""
 
 
-class RegisterToRead(SEBaseModel):
+class RegisterToRead(_BaseModel):
     """Регистр для чтения"""
 
     RegisterID: str
@@ -296,7 +296,7 @@ class RegisterToRead(SEBaseModel):
     """Зона"""
 
 
-class Premise(SEBaseModel):
+class Premise(_BaseModel):
     """Помещение установки прибора учета"""
 
     AddressInfo: AddressInfo
@@ -307,7 +307,7 @@ class Premise(SEBaseModel):
     """"""
 
 
-class AddressInfo(SEBaseModel):
+class AddressInfo(_BaseModel):
     """Адрес"""
 
     City: str
@@ -326,7 +326,7 @@ class AddressInfo(SEBaseModel):
     """Улица"""
 
 
-class Invoice(SEBaseModel):
+class Invoice(_BaseModel):
     """Счет на оплату"""
 
     AmountDue: Decimal
