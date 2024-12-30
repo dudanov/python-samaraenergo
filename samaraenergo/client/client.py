@@ -81,12 +81,17 @@ class SamaraEnergoClient:
 
     async def _get(self, path: str, *expand: str) -> bytes:
         url, params = _BASE_URL.joinpath(path), self._BASE_PARAMS
-        headers = None if path.endswith("/$value") else _HEADER_ACCEPT_JSON
+        headers = None if path.endswith("$value") else _HEADER_ACCEPT_JSON
 
         if expand:
             params = ChainMap(params, {"$expand": ",".join(expand)})
 
-        async with self._cli.get(url, params=params, headers=headers) as x:
+        async with self._cli.get(
+            url=url,
+            params=params,
+            headers=headers,
+            raise_for_status=True,
+        ) as x:
             return await x.read()
 
     def _account_get(self, path: str, account: int, *expand: str) -> Awaitable[bytes]:
@@ -141,22 +146,26 @@ class SamaraEnergoClient:
 
         return x.root
 
-    async def _fetch_csrf_token(self):
+    async def _fetch_csrf_token(self) -> dict[str, str]:
+        """Запрашивает токен CSRF и возвращает HTTP заголовок"""
+
         async with self._cli.head(
-            _BASE_URL,
+            url=_BASE_URL,
             params=self._BASE_PARAMS,
             headers={_X_CSRF_TOKEN: "Fetch"},
+            raise_for_status=True,
         ) as x:
             return {_X_CSRF_TOKEN: x.headers[_X_CSRF_TOKEN]}
 
     async def set_value(self, *values: Decimal, device_id: str):
+        """"""
         assert 1 <= len(values) <= 3
-        datetime = dt.datetime.now(dt.UTC)
+        now = dt.datetime.now(dt.UTC)
 
         results = [
             MeterReadingResult(
                 DependentMeterReadingResults=[],
-                ReadingDateTime=datetime,
+                ReadingDateTime=now,
                 DeviceID=device_id,
                 MeterReadingNoteID="920",  # мобильный личный кабинет
                 RegisterID=f"{id:03}",
@@ -180,8 +189,10 @@ class SamaraEnergoClient:
             params=self._BASE_PARAMS,
             data=json_str,
             headers=headers,
+            raise_for_status=True,
         ) as x:
             result = await x.read()
-            _dump(result)
-            result = ResponseModel[MeterReadingResult2].model_validate_json(result)
-            return result.root
+
+        _dump(result)
+        result = ResponseModel[MeterReadingResult2].model_validate_json(result)
+        return result.root
