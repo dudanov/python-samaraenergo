@@ -81,7 +81,7 @@ class SamaraEnergoClient:
 
     async def _get(self, path: str, *expand: str) -> bytes:
         url, params = _BASE_URL.joinpath(path), self._BASE_PARAMS
-        headers = _HEADER_ACCEPT_JSON if url.name != "$value" else None
+        headers = None if path.endswith("/$value") else _HEADER_ACCEPT_JSON
 
         if expand:
             params = ChainMap(params, {"$expand": ",".join(expand)})
