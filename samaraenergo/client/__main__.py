@@ -13,7 +13,7 @@ with open("secrets.json") as f:
 
 async def main():
     async with SamaraEnergoClient(secrets["login"], secrets["password"]) as cli:
-        a = await cli.get_info()
+        a = await cli.get_device_values("11712434")
         print(a)
         # rr = await cli.set_value(Decimal(12), Decimal(13), device_id="11712434")
         # print(rr)

@@ -15,6 +15,7 @@ from .models import (
     MeterReadingResult,
     MeterReadingResult2,
     PaymentDocument,
+    RegisterToRead,
     ResponseListModel,
     ResponseModel,
 )
@@ -157,9 +158,21 @@ class SamaraEnergoClient:
         ) as x:
             return {_X_CSRF_TOKEN: x.headers[_X_CSRF_TOKEN]}
 
+    async def get_device_values(self, device_id: str) -> list[Decimal]:
+        x = await self._get(f"Devices(DeviceID='{device_id}')/RegistersToRead")
+        x = ResponseListModel[RegisterToRead].model_validate_json(x)
+        lst = sorted(x.root, key=lambda k: k.RegisterID)
+
+        return [x.PreviousMeterReadingResult for x in lst]
+
     async def set_value(self, *values: Decimal, device_id: str):
         """"""
-        assert 1 <= len(values) <= 3
+
+        previous = await self.get_device_values(device_id)
+
+        assert len(values) == len(previous)
+        assert all(x1 >= x0 for x1, x0 in zip(values, previous))
+
         now = dt.datetime.now(dt.UTC)
 
         results = [
