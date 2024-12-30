@@ -81,11 +81,12 @@ class SamaraEnergoClient:
 
     async def _get(self, path: str, *expand: str) -> bytes:
         url, params = _BASE_URL.joinpath(path), self._BASE_PARAMS
+        headers = _HEADER_ACCEPT_JSON if url.name != "$value" else None
 
         if expand:
-            params = ChainMap(self._BASE_PARAMS, {"$expand": ",".join(expand)})
+            params = ChainMap(params, {"$expand": ",".join(expand)})
 
-        async with self._cli.get(url, params=params, headers=_HEADER_ACCEPT_JSON) as x:
+        async with self._cli.get(url, params=params, headers=headers) as x:
             return await x.read()
 
     def _account_get(self, path: str, account: int, *expand: str) -> Awaitable[bytes]:
