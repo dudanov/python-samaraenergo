@@ -1,5 +1,7 @@
 import io
 import logging
+import re
+from decimal import Decimal
 from typing import Any, Final, Mapping, cast
 
 import PIL.Image
@@ -7,6 +9,7 @@ import pymupdf
 from PIL.Image import Image, Palette
 
 _LOGGER: Final = logging.getLogger(__name__)
+_RE_AMOUNT: Final = re.compile(r"Итого к оплате: (.+) руб.")
 
 
 def save_to_png(img: Image) -> bytes:
@@ -23,8 +26,16 @@ def find_qrcode(pdf: bytes) -> Image:
     # и ищем самостоятельно.
 
     page = pymupdf.open(stream=pdf).load_page(0)
-    data = cast(Mapping[str, Any], page.get_text("dict"))  # type: ignore[attr-defined]
-    blocks = cast(list[Mapping[str, Any]], data["blocks"])
+
+    text: str = page.get_text("text")  # type: ignore[attr-defined]
+    print(text)
+
+    if m := _RE_AMOUNT.search(text):
+        summ = Decimal(m.group(1).replace(".", "").replace(",", "."))
+        _LOGGER.debug("Найдена сумма оплаты счета: %s", summ)
+        print(summ)
+
+    blocks = cast(list[Mapping[str, Any]], page.get_text("dict")["blocks"])  # type: ignore[attr-defined]
 
     for x in blocks:
         if img := x.get("image"):

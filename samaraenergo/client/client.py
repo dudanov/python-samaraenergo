@@ -95,13 +95,15 @@ class SamaraEnergoClient:
         ) as x:
             return await x.read()
 
-    def _account_get(self, path: str, account: int, *expand: str) -> Awaitable[bytes]:
-        return self._get(f"Accounts('{account}')/{path}", *expand)
+    def _account_get(
+        self, path: str, account_id: str, *expand: str
+    ) -> Awaitable[bytes]:
+        return self._get(f"Accounts('{account_id}')/{path}", *expand)
 
-    async def get_invoices(self, account: int) -> list[Invoice]:
+    async def get_invoices(self, account_id: str) -> list[Invoice]:
         """Запрос всех счетов по аккаунту"""
 
-        x = await self._account_get("Invoices", account)
+        x = await self._account_get("Invoices", account_id)
         x = ResponseListModel[Invoice].model_validate_json(x)
 
         return x.root
@@ -111,10 +113,10 @@ class SamaraEnergoClient:
 
         return self._get(f"Invoices(InvoiceID='{invoice_id}')/InvoicePDF/$value")
 
-    async def get_payments(self, account: int) -> list[PaymentDocument]:
+    async def get_payments(self, account_id: str) -> list[PaymentDocument]:
         """Запрос информации об оплатах"""
 
-        x = await self._account_get("PaymentDocuments", account)
+        x = await self._account_get("PaymentDocuments", account_id)
         x = ResponseListModel[PaymentDocument].model_validate_json(x)
 
         return x.root
@@ -158,7 +160,7 @@ class SamaraEnergoClient:
         ) as x:
             return {_X_CSRF_TOKEN: x.headers[_X_CSRF_TOKEN]}
 
-    async def get_device_values(self, device_id: str) -> list[Decimal]:
+    async def get_last_accepted_values(self, device_id: str) -> list[Decimal]:
         x = await self._get(f"Devices(DeviceID='{device_id}')/RegistersToRead")
         x = ResponseListModel[RegisterToRead].model_validate_json(x)
         lst = sorted(x.root, key=lambda k: k.RegisterID)
@@ -168,7 +170,7 @@ class SamaraEnergoClient:
     async def set_value(self, *values: Decimal, device_id: str):
         """"""
 
-        previous = await self.get_device_values(device_id)
+        previous = await self.get_last_accepted_values(device_id)
 
         assert len(values) == len(previous)
         assert all(x1 >= x0 for x1, x0 in zip(values, previous))
