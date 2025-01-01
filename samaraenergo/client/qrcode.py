@@ -40,9 +40,8 @@ def find_qrcode(pdf: bytes) -> Image:
     for x in blocks:
         if img := x.get("image"):
             width, height = x["width"], x["height"]
-            ratio = width / height
 
-            if height < 400 and not (0.9 <= ratio <= 1.1):
+            if height < 400 and not (0.9 <= (ratio := width / height) <= 1.1):
                 continue
 
             img = PIL.Image.open(io.BytesIO(img)).convert("RGB")
