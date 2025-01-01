@@ -38,22 +38,24 @@ def find_qrcode(pdf: bytes) -> Image:
     blocks = cast(list[Mapping[str, Any]], page.get_text("dict")["blocks"])  # type: ignore[attr-defined]
 
     for x in blocks:
-        if img := x.get("image"):
-            width, height = x["width"], x["height"]
+        if not (img := x.get("image")):
+            continue
 
-            if height < 400 or not (0.9 <= (ratio := width / height) <= 1.1):
-                continue
+        width, height = x["width"], x["height"]
 
-            img = PIL.Image.open(io.BytesIO(img)).convert("RGB")
+        if (height < 400) or not (0.9 <= (ratio := width / height) <= 1.1):
+            continue
 
-            _LOGGER.debug("Найдено изображение: %s", img)
+        img = PIL.Image.open(io.BytesIO(img)).convert("RGB")
 
-            if ratio != 1:
-                px = min(width, height)
-                _LOGGER.debug("Обрезка в квадрат %dx%d пикселей", px, px)
+        _LOGGER.debug("Найдено изображение: %s", img)
 
-                return img.crop((0, 0, px, px))
-
+        if ratio == 1:
             return img
+
+        px = min(width, height)
+        _LOGGER.debug("Обрезка в квадрат %dx%d пикселей", px, px)
+
+        return img.crop((0, 0, px, px))
 
     raise FileNotFoundError("Не удалось найти QR-код в счете PDF")
